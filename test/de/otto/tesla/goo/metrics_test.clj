@@ -1,4 +1,4 @@
-(ns de.otto.tesla.goo.metrics-test
+(ns de.otto.tesla.goo.metrics_test
   (:require [clojure.test :refer :all]
             [metrics.core :as metrics]
             [de.otto.tesla.goo.metrics :as goo]
