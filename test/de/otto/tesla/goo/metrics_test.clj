@@ -4,6 +4,7 @@
             [de.otto.tesla.goo.metrics :as goo]
             [metrics.meters :as meters]
             [metrics.gauges :as gauges]
+            [metrics.timers :as timers]
             [metrics.histograms :as hist]
             [metrics.counters :as counters]))
 
@@ -107,3 +108,22 @@
              (:labels counter)))
       (is (= (:metric counter)
              (counters/counter "my-labeled-metric.live"))))))
+
+(deftest create-timer-test
+  (testing "if a timer gets created"
+    (let [timer (goo/timer "my-metric" [])]
+      (is (= "my-metric"
+             (:name timer)))
+      (is (= []
+             (:labels timer)))
+      (is (= (:metric timer)
+             (timers/timer "my-metric")))))
+
+  (testing "if a timer with labels gets created"
+    (let [timer (goo/timer "my-labeled-metric" [["stage" "live"]])]
+      (is (= "my-labeled-metric"
+             (:name timer)))
+      (is (= [["stage" "live"]]
+             (:labels timer)))
+      (is (= (:metric timer)
+             (timers/timer "my-labeled-metric.live"))))))
