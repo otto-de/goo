@@ -26,9 +26,9 @@
     (create-metric name labels creation-fn)))
 
 (defn clear-metrics []
-  (reset! metrics [])
-  (for [metric @metrics]
-    (metrics/remove-metric (nc/to-graphite metric))))
+  (doseq [metric @metrics]
+    (metrics/remove-metric (nc/to-graphite metric)))
+  (reset! metrics []))
 
 (defn meter [name labels]
   (search name labels meters/meter))
