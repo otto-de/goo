@@ -17,7 +17,6 @@
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/tools.logging "0.3.1"]
                  [com.stuartsierra/component "0.3.2"]
-                 [metrics-clojure "2.8.0"]
-                 [metrics-clojure-graphite "2.8.0"]]
+                 [metrics-clojure "2.8.0"]]
   :profiles {:dev {:plugins [[lein-release/lein-release "1.0.9"]]}}
   )
