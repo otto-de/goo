@@ -1,0 +1,4 @@
+{"SENTINEL get-master-addr-by-name" {:fn-name "master", :fn-docstring "return the current master if known", :fn-params-fixed [mastername], :fn-params-more nil, :req-args-fixed ["SENTINEL" "get-master-addr-by-name" mastername], :cluster-key-idx 1}
+ "ROLE"                             {:fn-name "role", :fn-docstring "return the role of the connected instance", :fn-params-fixed [], :fn-params-more nil, :req-args-fixed ["ROLE"], :cluster-key-idx 1}
+ "SENTINEL slaves"                  {:fn-name "slaves", :fn-docstring "return the current slaves if known", :fn-params-fixed [mastername], :fn-params-more nil, :req-args-fixed ["SENTINEL" "slaves" mastername], :cluster-key-idx 1}
+ "SENTINEL sentinels"               {:fn-name "sentinels", :fn-docstring "return the current sentinels if known", :fn-params-fixed [mastername], :fn-params-more nil, :req-args-fixed ["SENTINEL" "sentinels" mastername], :cluster-key-idx 1}}
