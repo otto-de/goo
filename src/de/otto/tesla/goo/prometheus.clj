@@ -5,7 +5,7 @@
             [clojure.tools.logging :as log])
   (:import (com.codahale.metrics Snapshot)))
 
-(defn prometheus-name [name]
+(defn cleansed-name [name]
   (-> name
       (cs/replace #"\.|-" "_")
       (cs/replace #"\W" "")))
@@ -23,12 +23,12 @@
   (if (empty? labels)
     ""
     (->> labels
-         (map (fn [[k v]] (format "%s=\"%s\"" k v)))
+         (map (fn [[k v]] (format "%s=\"%s\"" (cleansed-name k) v)))
          (cs/join ",")
          (format "{%s}"))))
 
 (defn- single-value-metric->text [name type labels value]
-  (let [pn (prometheus-name name)
+  (let [pn (cleansed-name name)
         type-str (type->prom-name type)]
     (format "%s%s%s %s\n" (type-line pn type-str) pn (stringify-labels labels) value)))
 
@@ -48,7 +48,7 @@
     (->> quantiles (map quantile-str) (cs/join))))
 
 (defn histogram->text [{:keys [name type labels metric]}]
-  (let [pn (prometheus-name name)
+  (let [pn (cleansed-name name)
         ^Snapshot snapshot (.getSnapshot metric)]
     (str
       (type-line pn "summary")

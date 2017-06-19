@@ -75,6 +75,7 @@
              (prom/generate-prometheus-metrics metrics)))))
 
   (testing "if integration with goo works properly"
+    (goo/clear-metrics)
     (goo/meter "my_meter" [["stage" "develop"] ["job" "goo"]])
     (is (= (str "# TYPE my_meter counter\n"
                 "my_meter{stage=\"develop\",job=\"goo\"} 0\n")
@@ -92,7 +93,11 @@
   (testing "if two labels get stringified in a prometheus parseable way"
     (is (= "{stage=\"live\",job=\"goo\"}"
            (prom/stringify-labels [["stage" "live"]
-                                   ["job" "goo"]])))))
+                                   ["job" "goo"]]))))
+
+  (testing "it replaces invalid characteres in label name"
+    (is (= "{invalid_lbel_name=\"myvälue\"}"
+           (prom/stringify-labels [["invalid.läbel-name" "myvälue"]])))))
 
 (deftest histograms-transformation-test
   (testing "Should transform a histogram into their string representation"
