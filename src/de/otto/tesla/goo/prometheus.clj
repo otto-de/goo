@@ -1,7 +1,8 @@
 (ns de.otto.tesla.goo.prometheus
   (:require [metrics.core :as metrics]
             [de.otto.tesla.goo.metrics :as goo]
-            [clojure.string :as str])
+            [clojure.string :as str]
+            [clojure.tools.logging :as log])
   (:import (com.codahale.metrics Snapshot)))
 
 (defn prometheus-name [name]
@@ -12,15 +13,18 @@
 (defn- type-line [name type]
   (format "# TYPE %s %s\n" name type))
 
-(defn counter->text [[name counter]]
+(defn- single-value-metric->text [name type-str value]
   (let [pn (prometheus-name name)]
-    (format "%s%s %s\n" (type-line pn "counter") pn (.getCount counter))))
+    (format "%s%s %s\n" (type-line pn type-str) pn value)))
+
+(defn counter->text [[name counter]]
+  (single-value-metric->text name "counter" (.getCount counter)))
 
 (defn gauge->text [[name gauge]]
-  (let [pn (prometheus-name name)
-        v (.getValue gauge)]
-    (when (number? v)
-      (format "%s%s %s\n" (type-line pn "gauge") pn v))))
+  (let [v (.getValue gauge)]
+    (if (number? v)
+      (single-value-metric->text name "gauge" v)
+      (log/warnf "Invalid metric value for gauge \"%s\"" name))))
 
 (defn histogram->text [[name histogram]]
   (let [pn (prometheus-name name)
