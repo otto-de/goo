@@ -4,10 +4,10 @@
 
 (deftest to-graphite-test
   (testing "if a simple metric get's converted"
-    (is (= "my-metric"
+    (is (= ["my-metric"]
            (nc/to-graphite {:name   "my-metric"
                             :labels []}))))
   (testing "if a metric with a label gets converted"
-    (is (= "my-metric.live"
+    (is (= ["my-metric.live"]
            (nc/to-graphite {:name   "my-metric"
                             :labels [["stage" "live"]]})))))

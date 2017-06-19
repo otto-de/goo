@@ -14,26 +14,34 @@
 
 (use-fixtures :each clear-ram)
 
+(deftest name-test
+  (testing "it registers metrics under correct name"
+    (goo/clear-metrics)
+    (metrics/remove-all-metrics)
+    (goo/counter "simple-name")
+    (is (= "simple-name"
+           (key (first (metrics/counters metrics/default-registry)))))))
+
 (deftest clear-metrics-test
   (testing "if a created meter gets deleted"
     (goo/meter "mymeter" [["stage" "dev"]])
     (goo/clear-metrics)
     (is (empty? @goo/metrics))
-    (is (empty? (.getMeters metrics/default-registry)))))
+    (is (not (contains? (set (keys (.getMeters metrics/default-registry))) "mymeter.dev")))))
 
 (deftest create-meter-test
   (testing "if a meter gets created"
     (is (= (goo/meter "my-metric" [])
-           (meters/meter "my-metric"))))
+           (meters/meter ["my-metric"]))))
 
   (testing "if a meter with labels gets created"
     (is (= (goo/meter "my-labeled-metric" [["stage" "live"]])
-           (meters/meter "my-labeled-metric.live"))))
+           (meters/meter ["my-labeled-metric.live"]))))
 
   (testing "if different labels result in different meter"
     (is (= (goo/meter "my-labeled-metric" [["stage" "live"]
                                            ["label1" "value1"]])
-           (meters/meter "my-labeled-metric.live.value1")))))
+           (meters/meter ["my-labeled-metric.live.value1"])))))
 
 (deftest create-gauge-test
   (testing "if a gauge gets created"
@@ -47,26 +55,26 @@
 (deftest create-histogram-test
   (testing "if a histogram gets created"
     (is (= (goo/histogram "my-metric" [])
-           (hist/histogram "my-metric"))))
+           (hist/histogram ["my-metric"]))))
 
   (testing "if a histogram with labels gets created"
     (is (= (goo/histogram "my-labeled-metric" [["stage" "live"]])
-           (hist/histogram "my-labeled-metric.live")))))
+           (hist/histogram ["my-labeled-metric.live"])))))
 
 (deftest create-counter-test
   (testing "if a counter gets created"
     (is (= (goo/counter "my-metric" [])
-           (counters/counter "my-metric"))))
+           (counters/counter ["my-metric"]))))
 
   (testing "if a counter with labels gets created"
     (is (= (goo/counter "my-labeled-metric" [["stage" "live"]])
-           (counters/counter "my-labeled-metric.live")))))
+           (counters/counter ["my-labeled-metric.live"])))))
 
 (deftest create-timer-test
   (testing "if a timer gets created"
     (is (= (goo/timer "my-metric" [])
-           (timers/timer "my-metric"))))
+           (timers/timer ["my-metric"]))))
 
   (testing "if a timer with labels gets created"
     (is (= (goo/timer "my-labeled-metric" [["stage" "live"]])
-           (timers/timer "my-labeled-metric.live")))))
+           (timers/timer ["my-labeled-metric.live"])))))

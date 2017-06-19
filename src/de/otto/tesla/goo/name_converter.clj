@@ -6,5 +6,5 @@
                            (map second)
                            (str/join "."))]
     (if (empty? label-str)
-      name
-      (format "%s.%s" name label-str))))
+      [name]
+      [(format "%s.%s" name label-str)])))
