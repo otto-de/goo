@@ -42,7 +42,7 @@
       (log/warnf "Invalid metric value for gauge \"%s\"" name))))
 
 (defn format-quantiles [pn labels snapshot]
-  (let [quantiles [0.01 0.05 0.5 0.9 0.99]
+  (let [quantiles [0.001 0.01 0.1 0.5 0.9 0.99 0.999]
         labels+quantile (fn [q] (stringify-labels (concat [["quantile" (str q)]] labels)))
         quantile-str (fn [q] (format "%s%s %s\n" pn (labels+quantile q) (.getValue snapshot (double q))))]
     (->> quantiles (map quantile-str) (cs/join))))
