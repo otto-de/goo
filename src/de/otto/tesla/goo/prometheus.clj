@@ -35,24 +35,11 @@
       (format "%s_sum %s\n" pn (reduce (fn [agg val] (+ agg val)) 0 (.getValues snapshot)))
       (format "%s_count %s\n" pn (.getCount histogram)))))
 
-(defn timer->text [[name timer]]
-  (str
-    (counter->text [(str name "_cnt") timer])
-    (histogram->text [(str name "_hist") timer])))
-
-#_(defn collect-metrics [registry]
-  (str/join (concat (map counter->text (metrics/counters registry))
-                  (map counter->text (metrics/meters registry))
-                  (map timer->text (metrics/timers registry))
-                  (map histogram->text (metrics/histograms registry))
-                  (keep gauge->text (metrics/gauges registry)))))
-
-
 (defn generate-prometheus-metrics []
   (let [transform-fn #(case %
                          :meter counter->text
                          :counter counter->text
                          :histogram histogram->text
-                         :timer timer->text
+                         :timer histogram->text
                          :gauge gauge->text)]
     (str/join (map (fn [metric] ((transform-fn (:type metric)) [(:name metric) (:metric metric)])) @goo/metrics))))

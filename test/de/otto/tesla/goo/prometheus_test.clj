@@ -68,22 +68,6 @@
                   "meter1 1\n")
              (prom/counter->text ["meter1" m]))))))
 
-(deftest timers-transformation-test
-  (testing "Should transform a timer into a prometheus counter as well as in a prometheus summary"
-    (metrics/remove-all-metrics)
-    (let [t (timer/timer "timer1")]
-      (is (= (str "# TYPE timer1_cnt counter\n"
-                  "timer1_cnt 0\n"
-                  "# TYPE timer1_hist summary\n"
-                  "timer1_hist{quantile=\"0.01\"} 0.0\n"
-                  "timer1_hist{quantile=\"0.05\"} 0.0\n"
-                  "timer1_hist{quantile=\"0.5\"} 0.0\n"
-                  "timer1_hist{quantile=\"0.9\"} 0.0\n"
-                  "timer1_hist{quantile=\"0.99\"} 0.0\n"
-                  "timer1_hist_sum 0\n"
-                  "timer1_hist_count 0\n")
-             (prom/timer->text ["timer1" t]))))))
-
 (deftest gauges-transformation-test
   (testing "Should transform a gauge into a string representation"
     (metrics/remove-all-metrics)
