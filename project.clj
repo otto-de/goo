@@ -15,7 +15,10 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
-                 [org.clojure/tools.logging "0.3.1"]
+                 [de.otto.tesla/basic-logging "0.3.1"]
                  [metrics-clojure "2.8.0"]]
-  :profiles {:dev {:plugins [[lein-release/lein-release "1.0.9"]]}}
+  :test-paths ["test" "test-resources"]
+  :profiles {:dev {:jvm-opts     ["-Dlog_appender=consoleAppender"
+                                  "-Dlog_level=INFO"]
+                   :plugins [[lein-release/lein-release "1.0.9"]]}}
   )

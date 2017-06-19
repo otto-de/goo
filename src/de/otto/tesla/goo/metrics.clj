@@ -10,6 +10,9 @@
 
 (def metrics (atom []))
 
+(defn metrics-snapshot []
+  @metrics)
+
 (defn create-metric-object [name type]
   (let [creation-fn (case type
                       :meter meters/meter
@@ -19,10 +22,10 @@
                       :gauge gauges/gauge)]
     (creation-fn name)))
 
-(defn- create-metric [name labels type]
-  (let [mm {:name  name :labels labels}
-        metric (assoc mm :metric (create-metric-object (nc/to-graphite mm) type))]
-    (log/infof "Create new metric %s of type %s" name (name type))
+(defn- create-metric [metric-name labels metric-type]
+  (let [mm {:name  metric-name :labels labels}
+        metric (assoc mm :metric (create-metric-object (nc/to-graphite mm) metric-type))]
+    (log/infof "Create new metric %s of type %s" metric-name (name metric-type))
     (swap! metrics #(conj % metric))
     metric))
 
@@ -32,24 +35,39 @@
                                        metric))
                         @metrics)]
     (:metric metric)
-    (create-metric name labels type)))
+    (:metric (create-metric name labels type))))
 
 (defn clear-metrics []
   (doseq [metric @metrics]
     (metrics/remove-metric (nc/to-graphite metric)))
   (reset! metrics []))
 
-(defn meter [name labels]
-  (look-up name labels :meter))
+(defn meter
+  ([name]
+    (meter name []))
+  ([name labels]
+   (look-up name labels :meter)))
 
-(defn counter [name labels]
-  (look-up name labels :counter))
+(defn counter
+  ([name]
+    (counter name []))
+  ([name labels]
+   (look-up name labels :counter)))
 
-(defn histogram [name labels]
-  (look-up name labels :histogram))
+(defn histogram
+  ([name]
+    (histogram name []))
+  ([name labels]
+   (look-up name labels :histogram)))
 
-(defn gauge [name labels]
-  (look-up name labels :gauge))
+(defn gauge
+  ([name]
+    (gauge name []))
+  ([name labels]
+   (look-up name labels :gauge)))
 
-(defn timer [name labels]
-  (look-up name labels :timer))
+(defn timer
+  ([name]
+    (timer name []))
+  ([name labels]
+   (look-up name labels :timer)))
