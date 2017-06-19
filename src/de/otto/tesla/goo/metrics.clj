@@ -10,7 +10,7 @@
 
 (def metrics (atom []))
 
-(defn create-ca-metric [name type]
+(defn create-metric-object [name type]
   (let [creation-fn (case type
                       :meter meters/meter
                       :counter counters/counter
@@ -21,13 +21,14 @@
 
 (defn- create-metric [name labels type]
   (let [mm {:name  name :labels labels}
-        metric (assoc mm :metric (create-ca-metric (nc/to-graphite mm) type))]
+        metric (assoc mm :metric (create-metric-object (nc/to-graphite mm) type))]
     (log/infof "Create new metric %s of type %s" name (name type))
     (swap! metrics #(conj % metric))
     metric))
 
-(defn- search [name labels type]
-  (if-let [metric (some (fn [metric] (when (and (= labels (:labels metric)) (= name (:name metric)))
+(defn- look-up [name labels type]
+  (if-let [metric (some (fn [metric] (when (and (= labels (:labels metric))
+                                                (= name (:name metric)))
                                        metric))
                         @metrics)]
     (:metric metric)
@@ -39,16 +40,16 @@
   (reset! metrics []))
 
 (defn meter [name labels]
-  (search name labels :meter))
+  (look-up name labels :meter))
 
 (defn counter [name labels]
-  (search name labels :counter))
+  (look-up name labels :counter))
 
 (defn histogram [name labels]
-  (search name labels :histogram))
+  (look-up name labels :histogram))
 
 (defn gauge [name labels]
-  (search name labels :gauge))
+  (look-up name labels :gauge))
 
 (defn timer [name labels]
-  (search name labels :timer))
+  (look-up name labels :timer))

@@ -1,49 +1,66 @@
 (ns de.otto.tesla.goo.prometheus
   (:require [metrics.core :as metrics]
             [de.otto.tesla.goo.metrics :as goo]
-            [clojure.string :as str]
+            [clojure.string :as cs]
             [clojure.tools.logging :as log])
   (:import (com.codahale.metrics Snapshot)))
 
 (defn prometheus-name [name]
   (-> name
-      (str/replace #"\.|-" "_")
-      (str/replace #"\W" "")))
+      (cs/replace #"\.|-" "_")
+      (cs/replace #"\W" "")))
+
+(defn type->prom-name [type]
+  (case type
+    :histogram "summary"
+    :meter "counter"
+    (name type)))
 
 (defn- type-line [name type]
   (format "# TYPE %s %s\n" name type))
 
-(defn- single-value-metric->text [name type-str value]
-  (let [pn (prometheus-name name)]
-    (format "%s%s %s\n" (type-line pn type-str) pn value)))
+(defn stringify-labels [labels]
+  (if (empty? labels)
+    ""
+    (->> labels
+         (map (fn [[k v]] (format "%s=\"%s\"" k v)))
+         (cs/join ",")
+         (format "{%s}"))))
 
-(defn counter->text [[name counter]]
-  (single-value-metric->text name "counter" (.getCount counter)))
+(defn- single-value-metric->text [name type labels value]
+  (let [pn (prometheus-name name)
+        type-str (type->prom-name type)]
+    (format "%s%s%s %s\n" (type-line pn type-str) pn (stringify-labels labels) value)))
 
-(defn gauge->text [[name gauge]]
-  (let [v (.getValue gauge)]
+(defn counter->text [{:keys [name type labels metric]}]
+  (single-value-metric->text name type labels (.getCount metric)))
+
+(defn gauge->text [{:keys [name type labels metric]}]
+  (let [v (.getValue metric)]
     (if (number? v)
-      (single-value-metric->text name "gauge" v)
+      (single-value-metric->text name type labels v)
       (log/warnf "Invalid metric value for gauge \"%s\"" name))))
 
-(defn histogram->text [[name histogram]]
+(defn format-quantiles [pn labels snapshot]
+  (let [quantiles [0.01 0.05 0.5 0.9 0.99]
+        labels+quantile (fn [q] (stringify-labels (concat [["quantile" (str q)]] labels)))
+        quantile-str (fn [q] (format "%s%s %s\n" pn (labels+quantile q) (.getValue snapshot (double q))))]
+    (->> quantiles (map quantile-str) (cs/join))))
+
+(defn histogram->text [{:keys [name type labels metric]}]
   (let [pn (prometheus-name name)
-        ^Snapshot snapshot (.getSnapshot histogram)]
+        ^Snapshot snapshot (.getSnapshot metric)]
     (str
       (type-line pn "summary")
-      (format "%s{quantile=\"0.01\"} %s\n" pn (.getValue snapshot (double 0.01)))
-      (format "%s{quantile=\"0.05\"} %s\n" pn (.getValue snapshot (double 0.05)))
-      (format "%s{quantile=\"0.5\"} %s\n" pn (.getMedian snapshot))
-      (format "%s{quantile=\"0.9\"} %s\n" pn (.getValue snapshot (double 0.9)))
-      (format "%s{quantile=\"0.99\"} %s\n" pn (.get99thPercentile snapshot))
-      (format "%s_sum %s\n" pn (reduce (fn [agg val] (+ agg val)) 0 (.getValues snapshot)))
-      (format "%s_count %s\n" pn (.getCount histogram)))))
+      (format-quantiles pn labels snapshot)
+      (format "%s_sum%s %s\n" pn (stringify-labels labels) (reduce + (.getValues snapshot)))
+      (format "%s_count%s %s\n" pn (stringify-labels labels) (.getCount metric)))))
 
-(defn generate-prometheus-metrics []
-  (let [transform-fn #(case %
-                         :meter counter->text
-                         :counter counter->text
-                         :histogram histogram->text
-                         :timer histogram->text
-                         :gauge gauge->text)]
-    (str/join (map (fn [metric] ((transform-fn (:type metric)) [(:name metric) (:metric metric)])) @goo/metrics))))
+(defn generate-prometheus-metrics [metrics]
+  (let [transform-fn (fn [m] (case (:type m)
+                               :meter (counter->text m)
+                               :counter (counter->text m)
+                               :histogram (histogram->text m)
+                               :timer (histogram->text m)
+                               :gauge (gauge->text m)))]
+    (->> metrics (map transform-fn) (cs/join))))
