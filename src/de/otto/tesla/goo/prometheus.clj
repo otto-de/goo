@@ -57,10 +57,10 @@
       (format "%s_count%s %s\n" pn (stringify-labels labels) (.getCount metric)))))
 
 (defn generate-prometheus-metrics [metrics]
-  (let [transform-fn (fn [m] (case (:type m)
-                               :meter (counter->text m)
-                               :counter (counter->text m)
-                               :histogram (histogram->text m)
-                               :timer (histogram->text m)
-                               :gauge (gauge->text m)))]
+  (let [transform-fn (fn [[_ m]] (case (:type m)
+                                   :meter (counter->text m)
+                                   :counter (counter->text m)
+                                   :histogram (histogram->text m)
+                                   :timer (histogram->text m)
+                                   :gauge (gauge->text m)))]
     (->> metrics (map transform-fn) (cs/join))))

@@ -1,7 +1,7 @@
 (ns de.otto.tesla.goo.name-converter
   (:require [clojure.string :as str]))
 
-(defn to-graphite [{:keys [name labels]}]
+(defn to-graphite [name labels]
   (let [label-str (some->> labels
                            (map second)
                            (str/join "."))]

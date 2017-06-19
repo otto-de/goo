@@ -8,7 +8,9 @@
             [metrics.histograms :as hist]
             [de.otto.tesla.goo.name-converter :as nc]))
 
-(def metrics (atom []))
+(def empty-registry {})
+
+(def metrics (atom empty-registry))
 
 (defn metrics-snapshot []
   @metrics)
@@ -23,51 +25,50 @@
     (creation-fn name)))
 
 (defn- create-metric [metric-name labels metric-type]
-  (let [mm {:name  metric-name :labels labels :type metric-type}
-        metric (assoc mm :metric (create-metric-object (nc/to-graphite mm) metric-type))]
+  (let [metric {:name metric-name
+                :labels labels
+                :type metric-type
+                :metric (create-metric-object (nc/to-graphite metric-name labels) metric-type)}]
     (log/infof "Create new metric %s of type %s" metric-name (name metric-type))
-    (swap! metrics #(conj % metric))
+    (swap! metrics assoc [metric-name labels] metric)
     metric))
 
 (defn- look-up [name labels type]
-  (if-let [metric (some (fn [metric] (when (and (= labels (:labels metric))
-                                                (= name (:name metric)))
-                                       metric))
-                        @metrics)]
+  (if-let [metric (get (metrics-snapshot) [name labels])]
     (:metric metric)
     (:metric (create-metric name labels type))))
 
 (defn clear-metrics []
-  (doseq [metric @metrics]
-    (metrics/remove-metric (nc/to-graphite metric)))
-  (reset! metrics []))
+  (doseq [[[name labels] _] (metrics-snapshot)]
+    (metrics/remove-metric (nc/to-graphite name labels)))
+  (reset! metrics empty-registry))
 
 (defn meter
   ([name]
-    (meter name []))
+   (meter name []))
   ([name labels]
    (look-up name labels :meter)))
 
 (defn counter
   ([name]
-    (counter name []))
+   (counter name []))
   ([name labels]
    (look-up name labels :counter)))
 
 (defn histogram
   ([name]
-    (histogram name []))
+   (histogram name []))
   ([name labels]
    (look-up name labels :histogram)))
 
 (defn gauge
   ([name]
-    (gauge name []))
+   (gauge name []))
   ([name labels]
    (look-up name labels :gauge)))
 
 (defn timer
   ([name]
-    (timer name []))
+   (timer name []))
   ([name labels]
    (look-up name labels :timer)))

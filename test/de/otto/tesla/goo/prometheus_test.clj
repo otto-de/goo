@@ -17,18 +17,18 @@
 
 (deftest generate-prometheus-metrics-test
   (testing "Should collect metrics into a single string representation"
-    (let [metrics [{:name   "counter1"
-                    :labels []
-                    :type   :counter
-                    :metric (counter/counter "counter1")}
-                   {:name   "hist1"
-                    :labels []
-                    :type   :histogram
-                    :metric (hists/histogram "hist1")}
-                   {:name   "gauge1"
-                    :labels []
-                    :type   :gauge
-                    :metric (gauges/gauge-fn "gauge1" (constantly 42))}]]
+    (let [metrics {["counter1" []] {:name   "counter1"
+                                    :labels []
+                                    :type   :counter
+                                    :metric (counter/counter "counter1")}
+                   ["hist1" []]    {:name   "hist1"
+                                    :labels []
+                                    :type   :histogram
+                                    :metric (hists/histogram "hist1")}
+                   ["gauge1" []]   {:name   "gauge1"
+                                    :labels []
+                                    :type   :gauge
+                                    :metric (gauges/gauge-fn "gauge1" (constantly 42))}}]
       (is (= (str "# TYPE counter1 counter\n"
                   "counter1 0\n"
                   "# TYPE hist1 summary\n"
@@ -46,18 +46,18 @@
              (prom/generate-prometheus-metrics metrics)))))
 
   (testing "Should collect metrics with labels into a single string representation"
-    (let [metrics [{:name   "counter1"
-                    :labels [["stage" "live"] ["job" "goo"]]
-                    :type   :counter
-                    :metric (counter/counter "counter1")}
-                   {:name   "hist1"
-                    :labels [["stage" "live"]]
-                    :type   :histogram
-                    :metric (hists/histogram "hist1")}
-                   {:name   "gauge1"
-                    :labels [["stage" "live"]]
-                    :type   :gauge
-                    :metric (gauges/gauge-fn "gauge1" (constantly 42))}]]
+    (let [metrics {["counter1" [["stage" "live"] ["job" "goo"]]] {:name   "counter1"
+                                                                  :labels [["stage" "live"] ["job" "goo"]]
+                                                                  :type   :counter
+                                                                  :metric (counter/counter "counter1")}
+                   ["hist1" [["stage" "live"]]]                  {:name   "hist1"
+                                                                  :labels [["stage" "live"]]
+                                                                  :type   :histogram
+                                                                  :metric (hists/histogram "hist1")}
+                   ["gauge1" [["stage" "live"]]]                 {:name   "gauge1"
+                                                                  :labels [["stage" "live"]]
+                                                                  :type   :gauge
+                                                                  :metric (gauges/gauge-fn "gauge1" (constantly 42))}}]
       (is (= (str "# TYPE counter1 counter\n"
                   "counter1{stage=\"live\",job=\"goo\"} 0\n"
                   "# TYPE hist1 summary\n"
