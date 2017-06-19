@@ -23,7 +23,7 @@
     (creation-fn name)))
 
 (defn- create-metric [metric-name labels metric-type]
-  (let [mm {:name  metric-name :labels labels}
+  (let [mm {:name  metric-name :labels labels :type metric-type}
         metric (assoc mm :metric (create-metric-object (nc/to-graphite mm) metric-type))]
     (log/infof "Create new metric %s of type %s" metric-name (name metric-type))
     (swap! metrics #(conj % metric))

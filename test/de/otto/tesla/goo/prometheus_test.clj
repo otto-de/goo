@@ -68,7 +68,13 @@
                   "hist1_count{stage=\"live\"} 0\n"
                   "# TYPE gauge1 gauge\n"
                   "gauge1{stage=\"live\"} 42\n")
-             (prom/generate-prometheus-metrics metrics))))))
+             (prom/generate-prometheus-metrics metrics)))))
+
+  (testing "if integration with goo works properly"
+    (goo/meter "my_meter" [["stage" "develop"] ["job" "goo"]])
+    (is (= (str "# TYPE my_meter counter\n"
+                "my_meter{stage=\"develop\",job=\"goo\"} 0\n")
+           (prom/generate-prometheus-metrics (goo/metrics-snapshot))))))
 
 (deftest stringify-labels-test
   (testing "if no labels return an empty string"
