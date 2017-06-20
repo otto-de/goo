@@ -5,8 +5,7 @@
             [metrics.gauges :as gauges]
             [metrics.counters :as counters]
             [metrics.timers :as timers]
-            [metrics.histograms :as hist]
-            [de.otto.tesla.goo.name-converter :as nc]))
+            [metrics.histograms :as hist]))
 
 (def empty-registry {})
 
@@ -24,11 +23,14 @@
                       :gauge gauges/gauge)]
     (creation-fn name)))
 
+(defn- codahale-name [name labels]
+  (cons name (map second labels)))
+
 (defn- create-metric [metric-name labels metric-type]
   (let [metric {:name metric-name
                 :labels labels
                 :type metric-type
-                :metric (create-metric-object (nc/to-graphite metric-name labels) metric-type)}]
+                :metric (create-metric-object (codahale-name metric-name labels) metric-type)}]
     (log/infof "Create new metric %s of type %s" metric-name (name metric-type))
     (swap! metrics assoc [metric-name labels] metric)
     metric))
@@ -40,7 +42,7 @@
 
 (defn clear-metrics []
   (doseq [[[name labels] _] (metrics-snapshot)]
-    (metrics/remove-metric (nc/to-graphite name labels)))
+    (metrics/remove-metric (codahale-name name labels)))
   (reset! metrics empty-registry))
 
 (defn meter

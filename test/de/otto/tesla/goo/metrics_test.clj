@@ -22,6 +22,14 @@
     (is (= "simple-name"
            (key (first (metrics/counters metrics/default-registry)))))))
 
+(deftest codahale-name-test
+  (testing "if a simple metric get's converted"
+    (is (= ["my-metric"]
+           (#'goo/codahale-name "my-metric" []))))
+  (testing "if a metric with a label gets converted"
+    (is (= ["my-metric" "live"]
+           (#'goo/codahale-name "my-metric" [["stage" "live"]])))))
+
 (deftest clear-metrics-test
   (testing "if a created meter gets deleted"
     (goo/meter "mymeter" [["stage" "dev"]])
