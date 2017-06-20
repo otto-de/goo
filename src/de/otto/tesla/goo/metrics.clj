@@ -14,7 +14,7 @@
 (defn metrics-snapshot []
   @metrics)
 
-(defn create-metric-object [name type]
+(defn- create-metric-object [name type]
   (let [creation-fn (case type
                       :meter meters/meter
                       :counter counters/counter
