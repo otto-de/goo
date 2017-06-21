@@ -7,13 +7,19 @@
   (:import (goo GraphiteExporter)))
 
 
+(defn sanitize-prefix [prefix]
+  (if (or (empty? prefix) (= \. (last prefix)))
+       prefix
+       (str prefix ".")))
+
 (defn push-to-graphite [config]
   (try
     (let [host (get-in config [:config :graphite-host])
           port (Integer/parseInt (get-in config [:config :graphite-port]))
+          prefix (sanitize-prefix (get-in config [:config :graphite-prefix] ""))
           r (.raw (goo/snapshot))]
-      (log/infof "Reporting to Graphite %s:%s" host port)
-      (GraphiteExporter/push host port r))
+      (log/infof "Reporting to Graphite %s:%s with %s" host port prefix)
+      (GraphiteExporter/push host port prefix r))
     (catch Exception e
       (log/error e "Error while Reporting to Graphite"))))
 

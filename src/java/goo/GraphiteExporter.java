@@ -23,13 +23,14 @@ public class GraphiteExporter {
     /**
      * Push samples from the given registry to GraphiteExporter.
      */
-    public static void push(String host, int port, CollectorRegistry registry) throws IOException {
+    public static void push(String host, int port, String prefix, CollectorRegistry registry) throws IOException {
         Socket s = new Socket(host, port);
         BufferedWriter writer = new BufferedWriter(new PrintWriter(s.getOutputStream()));
         Matcher m = INVALID_GRAPHITE_CHARS.matcher("");
         long now = System.currentTimeMillis() / 1000;
         for (Collector.MetricFamilySamples metricFamilySamples : Collections.list(registry.metricFamilySamples())) {
             for (Collector.MetricFamilySamples.Sample sample : metricFamilySamples.samples) {
+                writer.write(prefix);
                 m.reset(sample.name);
                 writer.write(m.replaceAll("_"));
                 for (int i = 0; i < sample.labelNames.size(); ++i) {
