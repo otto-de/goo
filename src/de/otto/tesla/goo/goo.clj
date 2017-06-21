@@ -22,5 +22,8 @@
        (register (~(first m) ~name ~@(rest m))))
      (~(first op) @default-registry ~name ~@(rest op))))
 
+(defn get-from-default-registry [name]
+  (@default-registry name))
+
 (defn text-format []
   (e/text-format @default-registry))
