@@ -1,4 +1,4 @@
-(defproject de.otto.tesla/goo "0.0.3"
+(defproject de.otto.tesla/goo "0.0.4-SNAPSHOT"
   :repositories [["central" {:url "http://artifactory.lhotse.ov.otto.de/artifactory/maven-central-remote"}]
                  ["clojars" {:url "http://artifactory.lhotse.ov.otto.de/artifactory/clojars-releases-remote"}]
                  ["nexus-releases" {:url "http://artifactory.lhotse.ov.otto.de/artifactory/nexus-releases-remote"}]
