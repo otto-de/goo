@@ -9,14 +9,14 @@
 
 (defn sanitize-prefix [prefix]
   (if (or (empty? prefix) (= \. (last prefix)))
-       prefix
-       (str prefix ".")))
+    prefix
+    (str prefix ".")))
 
-(defn push-to-graphite [config]
+(defn push-to-graphite [graphite-config]
   (try
-    (let [host (get-in config [:config :graphite-host])
-          port (Integer/parseInt (get-in config [:config :graphite-port]))
-          prefix (sanitize-prefix (get-in config [:config :graphite-prefix] ""))
+    (let [host (:host graphite-config)
+          port (Integer/parseInt (:port graphite-config))
+          prefix (sanitize-prefix (:prefix graphite-config ""))
           r (.raw (goo/snapshot))]
       (log/infof "Reporting to Graphite %s:%s with %s" host port prefix)
       (GraphiteExporter/push host port prefix r))
@@ -26,9 +26,10 @@
 (defrecord GooGraphite [config scheduler]
   c/Lifecycle
   (start [self]
-    (let [interval-in-ms (* 1000 (get-in config [:config :graphite-interval-seconds]))]
+    (let [graphite-config (get-in config [:config :goo :graphite])
+          interval-in-ms (* 1000 (:interval-in-s graphite-config))]
       (log/info "-> Starting Goo Graphite")
-      (at/every interval-in-ms #(push-to-graphite config) (sched/pool scheduler) :desc "Goo Graphite"))
+      (at/every interval-in-ms #(push-to-graphite graphite-config) (sched/pool scheduler) :desc "Goo Graphite"))
     self)
 
   (stop [self]
