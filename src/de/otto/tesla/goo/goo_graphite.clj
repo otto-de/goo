@@ -7,20 +7,27 @@
   (:import (goo GraphiteExporter)))
 
 
+(defn push-to-graphite [config]
+  (try
+    (let [host (get-in config [:config :graphite-host])
+          port (Integer/parseInt (get-in config [:config :graphite-port]))
+          r (.raw (goo/snapshot))]
+      (log/infof "Reporting to Graphite %s:%s" host port)
+      (GraphiteExporter/push host port r))
+    (catch Exception e
+      (log/error e "Error while Reporting to Graphite"))))
+
 (defrecord GooGraphite [config scheduler]
   c/Lifecycle
   (start [self]
-    (let [host (get-in config [:config :graphite-host])
-          port (get-in config [:config :graphite-port])
-          interval-in-ms (* 1000 (get-in config [:config :graphite-interval-seconds]))
-          r (.raw (goo/snapshot))]
-      (log/info "Starting Goo Graphite")
-      (at/every interval-in-ms #(GraphiteExporter/push host port r) (sched/pool scheduler) :desc "Goo Graphite"))
-    )
-  (stop [self]
-    (log/info "Stopping Goo Graphite")
-    self))
+    (let [interval-in-ms (* 1000 (get-in config [:config :graphite-interval-seconds]))]
+      (log/info "-> Starting Goo Graphite")
+      (at/every interval-in-ms #(push-to-graphite config) (sched/pool scheduler) :desc "Goo Graphite"))
+    self)
 
+  (stop [self]
+    (log/info "<- Stopping Goo Graphite")
+    self))
 
 (defn new-goo-graphite []
   (map->GooGraphite {}))
