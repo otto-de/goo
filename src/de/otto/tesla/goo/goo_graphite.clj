@@ -18,7 +18,7 @@
           port (Integer/parseInt (:port graphite-config))
           prefix (sanitize-prefix (:prefix graphite-config ""))
           r (.raw (goo/snapshot))]
-      (log/infof "Reporting to Graphite %s:%s with %s" host port prefix)
+      (log/infof "Reporting to Graphite %s:%s with %s as prefix" host port prefix)
       (GraphiteExporter/push host port prefix r))
     (catch Exception e
       (log/error e "Error while Reporting to Graphite"))))
