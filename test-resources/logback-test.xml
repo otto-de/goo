@@ -1,0 +1,25 @@
+<configuration>
+    <contextName>recardo</contextName>
+
+    <conversionRule conversionWord="mescaped"
+                    converterClass="de.otto.util.escapingmessageconverter" />
+
+    <appender name="consoleAppender" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%gray(%date{HH:mm:ss.SSS}) [%thread] %highlight(%-5level) %cyan(%logger{15}) %mescaped%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="fileAppender" class="ch.qos.logback.core.FileAppender">
+        <file>target/tesla-test.log</file>
+        <append>false</append>
+        <encoder>
+            <pattern>%date{HH:mm:ss.SSS} [%thread] %-5level %logger{15} - %mescaped%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="${log_level:-info}">
+        <appender-ref ref="${log_appender:-fileAppender}"/>
+    </root>
+
+</configuration>

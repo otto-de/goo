@@ -16,7 +16,10 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [iapetos "0.1.6"]
-                 [de.otto/tesla-microservice "0.10.0"]]
+                 [de.otto/tesla-microservice "0.10.0"]
+                 [de.otto.tesla/basic-logging "0.3.1"]]
   :java-source-paths ["src/java"]
-  :test-paths ["test"]
-  :profiles {:dev {:plugins [[lein-release/lein-release "1.0.9"]]}})
+  :test-paths ["test" "test-resources"]
+  :profiles {:dev {:jvm-opts     ["-Dlog_appender=consoleAppender"
+                                  "-Dlog_level=INFO"]
+                   :plugins [[lein-release/lein-release "1.0.9"]]}})

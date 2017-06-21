@@ -1,6 +1,7 @@
 (ns de.otto.tesla.goo.goo
   (:require [iapetos.core :as p]
-            [iapetos.export :as e]))
+            [iapetos.export :as e]
+            [clojure.tools.logging :as log]))
 
 (def empty-registry (p/collector-registry))
 
@@ -14,7 +15,10 @@
   (reset! default-registry (p/collector-registry)))
 
 (defn register [& ms]
-  (swap! default-registry (fn [r] (apply p/register r ms))))
+  (try
+    (swap! default-registry (fn [r] (apply p/register r ms)))
+    (catch IllegalArgumentException e
+      (log/warn (.getMessage e)))))
 
 (defmacro with-default-registry [& ops]
   `(-> (snapshot) ~@ops))
