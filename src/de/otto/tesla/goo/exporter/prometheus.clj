@@ -1,9 +1,9 @@
-(ns de.otto.tesla.goo.goo-prometheus
+(ns de.otto.tesla.goo.exporter.prometheus
   (:require [de.otto.tesla.stateful.handler :as handler]
             [clojure.tools.logging :as log]
             [com.stuartsierra.component :as component]
             [compojure.core :as c]
-            [de.otto.tesla.goo.goo :as goo]))
+            [de.otto.tesla.goo.core :as goo]))
 
 (defn metrics-response []
   {:status  200

@@ -1,6 +1,6 @@
-(ns de.otto.tesla.goo.goo-graphite-test
+(ns de.otto.tesla.goo.exporter.graphite-test
   (:require [clojure.test :refer :all]
-            [de.otto.tesla.goo.goo-graphite :as gg]))
+            [de.otto.tesla.goo.exporter.graphite :as gg]))
 
 (deftest build-prefix-test
   (is (= "prefix.hostname." (gg/build-prefix "prefix" "hostname" identity)))

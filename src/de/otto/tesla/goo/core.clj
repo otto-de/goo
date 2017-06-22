@@ -1,4 +1,4 @@
-(ns de.otto.tesla.goo.goo
+(ns de.otto.tesla.goo.core
   (:require [iapetos.core :as p]
             [iapetos.export :as e]
             [clojure.tools.logging :as log]))

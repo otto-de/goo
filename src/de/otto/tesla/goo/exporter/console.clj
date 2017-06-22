@@ -1,8 +1,8 @@
-(ns de.otto.tesla.goo.goo-console
+(ns de.otto.tesla.goo.exporter.console
   (:require [clojure.tools.logging :as log]
             [overtone.at-at :as at]
             [de.otto.tesla.stateful.scheduler :as sched]
-            [de.otto.tesla.goo.goo :as goo]))
+            [de.otto.tesla.goo.core :as goo]))
 
 (defn write-to-console [console-config]
   (log/info "Goo Console Reporting:")

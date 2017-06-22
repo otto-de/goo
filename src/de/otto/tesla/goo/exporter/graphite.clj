@@ -1,7 +1,7 @@
-(ns de.otto.tesla.goo.goo-graphite
+(ns de.otto.tesla.goo.exporter.graphite
   (:require [com.stuartsierra.component :as c]
             [de.otto.tesla.stateful.scheduler :as sched]
-            [de.otto.tesla.goo.goo :as goo]
+            [de.otto.tesla.goo.core :as goo]
             [overtone.at-at :as at]
             [clojure.tools.logging :as log]
             [environ.core :as env]

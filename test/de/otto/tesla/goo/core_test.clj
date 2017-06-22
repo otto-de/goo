@@ -1,6 +1,6 @@
-(ns de.otto.tesla.goo.goo-test
+(ns de.otto.tesla.goo.core-test
   (:require [clojure.test :refer :all]
-            [de.otto.tesla.goo.goo :as goo]
+            [de.otto.tesla.goo.core :as goo]
             [iapetos.core :as p]
             [clojure.tools.logging :as log]
             [clojure.string :as str]))
