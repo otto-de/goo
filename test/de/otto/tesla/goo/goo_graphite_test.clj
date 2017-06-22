@@ -11,7 +11,3 @@
 (deftest hostname-transform-test
   (is (= "prefix.abc." (gg/build-prefix "prefix" "host.name" (fn [hn] "abc"))))
   (is (= "prefix.host." (gg/build-prefix "prefix" "host.name" #(re-find #"[^.]*" %)))))
-
-(deftest default-hostname-transform-test
-  (is (= identity
-         (:hostname-transform (gg/new-goo-graphite {})))))

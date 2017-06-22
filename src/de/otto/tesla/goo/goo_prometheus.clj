@@ -13,14 +13,8 @@
 (defn make-handler [{metrics-path :metrics-path}]
   (c/routes (c/GET metrics-path [] (metrics-response))))
 
-(defrecord Goo-Prometheus [config handler]
-  component/Lifecycle
-  (start [self]
-    (let [prometheus-config (get-in config [:config :goo :prometheus])]
-      (log/info "-> starting goo prometheus")
-      (handler/register-handler handler (make-handler prometheus-config))))
-  (stop [self]
-    (log/info "<- stopping goo prometheus")
-    self))
 
-(defn new-goo-prometheus [] (map->Goo-Prometheus {}))
+(defn register-endpoint! [handler config]
+  (let [prometheus-config (get-in config [:config :goo :prometheus])]
+    (log/info "Register goo prometheus endpoint")
+    (handler/register-handler handler (make-handler prometheus-config))))
