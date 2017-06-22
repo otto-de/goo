@@ -14,7 +14,6 @@
   (c/routes (c/GET metrics-path [] (metrics-response))))
 
 
-(defn register-endpoint! [handler config]
-  (let [prometheus-config (get-in config [:config :goo :prometheus])]
-    (log/info "Register goo prometheus endpoint")
-    (handler/register-handler handler (make-handler prometheus-config))))
+(defn register-endpoint! [prometheus-config handler]
+  (log/info "Register goo prometheus endpoint")
+  (handler/register-handler handler (make-handler prometheus-config)))

@@ -8,8 +8,7 @@
   (log/info "Goo Console Reporting:")
   (log/info (goo/text-format)))
 
-(defn start! [config scheduler]
-  (let [console-config (get-in config [:config :goo :console])
-        interval-in-ms (* 1000 (:interval-in-s console-config))]
+(defn start! [console-config scheduler]
+  (let [interval-in-ms (* 1000 (:interval-in-s console-config))]
     (log/info "Starting goo console exporter")
     (at/every interval-in-ms #(write-to-console console-config ) (sched/pool scheduler) :desc "Goo Console")))

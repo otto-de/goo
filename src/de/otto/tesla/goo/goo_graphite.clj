@@ -31,12 +31,11 @@
       (log/error e "Error while Reporting to Graphite"))))
 
 (defn start!
-  ([config scheduler]
-   (start! config scheduler identity))
+  ([graphite-config scheduler]
+   (start! graphite-config scheduler identity))
 
-  ([config scheduler hostname-transform]
-   (let [graphite-config (get-in config [:config :goo :graphite])
-         interval-in-ms (* 1000 (:interval-in-s graphite-config))]
+  ([graphite-config scheduler hostname-transform]
+   (let [interval-in-ms (* 1000 (:interval-in-s graphite-config))]
      (log/info "Starting goo graphite exporter")
      (at/every interval-in-ms #(push-to-graphite graphite-config hostname-transform) (sched/pool scheduler) :desc "Goo Graphite"))))
 
