@@ -3,11 +3,13 @@
             [de.otto.tesla.goo.exporter.graphite :as gg]))
 
 (deftest build-prefix-test
-  (is (= "prefix.hostname." (gg/build-prefix "prefix" "hostname" identity)))
-  (is (= "hostname." (gg/build-prefix nil "hostname" identity)))
-  (is (= "prefix." (gg/build-prefix "prefix" nil identity)))
-  (is (= "" (gg/build-prefix nil nil identity))))
+  (testing "prefix handling"
+    (is (= "prefix." (gg/build-prefix {:prefix "prefix"} "hostname")))
+    (is (= "" (gg/build-prefix {:prefix nil} "hostname")))
+    (is (= "prefix." (gg/build-prefix {:prefix "prefix"} nil)))
+    (is (= "" (gg/build-prefix {:prefix nil} nil))))
 
-(deftest hostname-transform-test
-  (is (= "prefix.abc." (gg/build-prefix "prefix" "host.name" (fn [hn] "abc"))))
-  (is (= "prefix.host." (gg/build-prefix "prefix" "host.name" #(re-find #"[^.]*" %)))))
+  (testing "hostname handling"
+    (is (= "prefix.host.name." (gg/build-prefix {:prefix "prefix" :include-hostname :full} "host.name")))
+    (is (= "prefix.host." (gg/build-prefix {:prefix "prefix" :include-hostname :first-part} "host.name")))
+    (is (= "host.name." (gg/build-prefix {:include-hostname :full} "host.name")))))
