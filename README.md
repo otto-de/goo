@@ -1,7 +1,7 @@
 # goo
 
-> With no ability to interact or observe the other side of these keyholes, nanoengineers at the University of Manchester created a swarm intelligent system called the Pathfinder (Goo), its prime directive: <b>Explore, Gather, Report</b>.
+> With no ability to interact or observe the other side of these keyholes, nanoengineers at the University of Manchester created a swarm intelligent system called the Pathfinder (Goo), its prime directive: <b>Explore, Gather, Report</b>.<br> - [aliens.wikia.com](http://aliens.wikia.com/wiki/Goo)
 
-A component encapsulating the codahale metrics library to export these metrics to graphite and prometheus.
-This way metrics can use the label system provided by prometheus. 
-
+A wrapper to the [Iapetos](https://github.com/xsc/iapetos) clojure binding for the prometheus client.
+XSC did some great work there, however handling the registry in different places in your program appeared a bit cumbersome to us.
+Goo yields a default-registry in it's state which is used by default for most operations (inc, set...) on collectors. 
