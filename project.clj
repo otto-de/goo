@@ -10,13 +10,11 @@
                                :username      :env/artifactory_user
                                :password      :env/artifactory_password
                                :sign-releases false}]]
-  :description "Component for exposing metrics to graphtie as well as "
-  :url "https://www.otto.de/suche/tesla/"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [iapetos "0.1.6"]
-                 [de.otto.tesla/basic-logging "0.3.1"]]
+                 [org.clojure/tools.logging "0.4.0"]]
   :test-paths ["test" "test-resources"]
   :profiles {:dev {:jvm-opts     ["-Dlog_appender=consoleAppender"
                                   "-Dlog_level=INFO"]
