@@ -1,4 +1,4 @@
-(defproject chillkroetetts/goo "0.2.0"
+(defproject chillkroetetts/goo "0.2.1-SNAPSHOT"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
