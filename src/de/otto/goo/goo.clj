@@ -89,12 +89,13 @@
 (defn measured-execution
   ([fn-name fn & fn-params]
    (quiet-register! (prom/histogram :measured-execution/execution-time-in-s
-                                    {:labels  [:function :exception] :buckets [0.001 0.005 0.01 0.02 0.05 0.1]}))
+                                    {:labels [:function :exception] :buckets [0.001 0.005 0.01 0.02 0.05 0.1]}))
    (let [start-time (System/currentTimeMillis)]
-     (try
-       (apply fn fn-params)
+   (try
+     (let [result (apply fn fn-params)]
        (observe! :measured-execution/execution-time-in-s {:function fn-name :exception :none}
                  (milli-to-seconds (- (System/currentTimeMillis) start-time)))
+       result)
        (catch Exception e
          (observe! :measured-execution/execution-time-in-s {:function fn-name :exception (.getName (class e))}
                    (milli-to-seconds (- (System/currentTimeMillis) start-time)))

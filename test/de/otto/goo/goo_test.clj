@@ -175,4 +175,7 @@
       (catch RuntimeException e))
     (is (= 1.0
            (first (.-buckets (.get ((metrics/snapshot) :measured-execution/execution-time-in-s {:function  :test-fn
-                                                                                                :exception "java.lang.RuntimeException"}))))))))
+                                                                                                :exception "java.lang.RuntimeException"})))))))
+  (testing "it returns something"
+    (is (= "test"
+           (metrics/measured-execution :fn-name  (constantly "test"))))))
