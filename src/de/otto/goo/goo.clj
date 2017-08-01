@@ -8,7 +8,7 @@
 
 (def empty-registry (p/collector-registry))
 
-(def default-registry (atom empty-registry))
+(defonce default-registry (atom empty-registry))
 
 (defn snapshot []
   @default-registry)
