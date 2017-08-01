@@ -159,3 +159,20 @@
              (.get ((metrics/snapshot) :http/calls-total {:rc 200 :method :post :path "/path1/path2"}))))
       (is (> (.sum (.get ((metrics/snapshot) :http/duration-in-s {:rc 200 :method :post :path "/path1/path2"})))
              0)))))
+
+(deftest measured-execution-test
+  (testing "it measures the execution time of the given body"
+    (metrics/measured-execution :test-fn #(Thread/sleep %) 2)
+    (is (= 0.0
+           (first (.-buckets (.get ((metrics/snapshot) :measured-execution/execution-time-in-s {:function  :test-fn
+                                                                                                :exception :none}))))))
+    (is (= 1.0
+           (second (.-buckets (.get ((metrics/snapshot) :measured-execution/execution-time-in-s {:function  :test-fn
+                                                                                                 :exception :none})))))))
+  (testing "it measures exceptions"
+    (try
+      (metrics/measured-execution :test-fn #(throw (RuntimeException.)))
+      (catch RuntimeException e))
+    (is (= 1.0
+           (first (.-buckets (.get ((metrics/snapshot) :measured-execution/execution-time-in-s {:function  :test-fn
+                                                                                                :exception "java.lang.RuntimeException"}))))))))
