@@ -9,6 +9,7 @@
                  [org.clojure/tools.logging "0.4.0"]]
   :test-paths ["test" "test-resources"]
   :lein-release {:deploy-via :clojars}
+  :aot [de.otto.goo.CallbackGauge]
   :profiles {:dev {:jvm-opts     ["-Dlog_appender=consoleAppender"
                                   "-Dlog_level=INFO"]
                    :plugins [[lein-release/lein-release "1.0.9"]]}})

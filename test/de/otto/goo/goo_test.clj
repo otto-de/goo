@@ -4,7 +4,8 @@
             [iapetos.core :as p]
             [clojure.tools.logging :as log]
             [clojure.string :as str])
-  (:import (iapetos.registry IapetosRegistry)))
+  (:import (iapetos.registry IapetosRegistry)
+           (de.otto.goo CallbackGauge)))
 
 (use-fixtures :each #(do (metrics/clear-default-registry!) (%)))
 
@@ -173,11 +174,12 @@
     (is (= "test"
            (metrics/measured-execution :fn-name (constantly "test"))))))
 
-(deftest serialize-metrics-test
-  (testing "it serializes the test metric"
-    (metrics/register-counter! :test/cnt {:labels [:test-label]})
-    (metrics/inc! :test/cnt {:test-label "blub"})
-    (is (= '(["test"
-              "test_cnt"
-              (".test_label.blub")
-              " 1.0 1234\n"]) (metrics/serialize-metrics 1234 "test" (metrics/snapshot))))))
+(deftest callback-gauge-test
+  (testing "callback gauge val changes if callback function returns different val"
+    (metrics/clear-default-registry!)
+    (let [foo (atom 1)
+          gauge-val #(-> (metrics/snapshot) (.raw) (.getSampleValue "callback"))
+          gauge (metrics/register-callback-gauge! "callback" "help" #(deref foo))]
+      (is (= 1.0 (gauge-val)))
+      (swap! foo inc)
+      (is (= 2.0  (gauge-val))))))

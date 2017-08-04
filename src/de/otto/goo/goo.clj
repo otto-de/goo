@@ -3,9 +3,11 @@
             [iapetos.export :as e]
             [clojure.tools.logging :as log]
             [iapetos.core :as prom]
+            [iapetos.metric :as metric]
             [clojure.string :as str])
   (:import (iapetos.registry IapetosRegistry)
-           (io.prometheus.client SimpleCollector Collector CollectorRegistry Collector$MetricFamilySamples Collector$MetricFamilySamples$Sample)))
+           (io.prometheus.client SimpleCollector Collector CollectorRegistry Collector$MetricFamilySamples Collector$MetricFamilySamples$Sample)
+           (de.otto.goo CallbackGauge)))
 
 (def empty-registry (p/collector-registry))
 
@@ -116,6 +118,10 @@
 (defn register-gauge! [name options initial]
   (register! (p/gauge name options))
   (update! name initial))
+
+(defn register-callback-gauge! [^String name  ^String help callback-fn]
+  (.register (.raw (snapshot)) (CallbackGauge. name help callback-fn))
+  )
 
 (defn register-summary! [name options]
   (register! (p/summary name options)))
