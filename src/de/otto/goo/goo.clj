@@ -4,7 +4,8 @@
             [clojure.tools.logging :as log]
             [iapetos.core :as prom]
             [clojure.string :as str])
-  (:import (io.prometheus.client SimpleCollector Collector)))
+  (:import (iapetos.registry IapetosRegistry)
+           (io.prometheus.client SimpleCollector Collector CollectorRegistry Collector$MetricFamilySamples Collector$MetricFamilySamples$Sample)))
 
 (def empty-registry (p/collector-registry))
 
@@ -48,7 +49,7 @@
 (defmacro dec! [& opts]
   `(with-default-registry (p/dec ~@opts)))
 
-(defmacro set! [& opts]
+(defmacro update! [& opts]
   `(with-default-registry (p/set ~@opts)))
 
 (defmacro observe! [& opts]
@@ -91,14 +92,53 @@
    (quiet-register! (prom/histogram :measured-execution/execution-time-in-s
                                     {:labels [:function :exception] :buckets [0.001 0.005 0.01 0.02 0.05 0.1]}))
    (let [start-time (System/currentTimeMillis)]
-   (try
-     (let [result (apply fn fn-params)]
-       (observe! :measured-execution/execution-time-in-s {:function fn-name :exception :none}
-                 (milli-to-seconds (- (System/currentTimeMillis) start-time)))
-       result)
+     (try
+       (let [result (apply fn fn-params)]
+         (observe! :measured-execution/execution-time-in-s {:function fn-name :exception :none}
+                   (milli-to-seconds (- (System/currentTimeMillis) start-time)))
+         result)
        (catch Exception e
          (observe! :measured-execution/execution-time-in-s {:function fn-name :exception (.getName (class e))}
                    (milli-to-seconds (- (System/currentTimeMillis) start-time)))
          (throw e))))))
 
+(defn samples-from [registry]
+  (->> registry
+       (.raw)
+       (.metricFamilySamples)
+       (enumeration-seq)
+       (map #(vec (.-samples %)))
+       (flatten)))
 
+(defn register-counter! [name options]
+  (register! (p/counter name options)))
+
+(defn register-gauge! [name options initial]
+  (register! (p/gauge name options))
+  (update! name initial))
+
+(defn register-summary! [name options]
+  (register! (p/summary name options)))
+
+(defn register-histogram! [name options]
+  (register! (p/histogram name options)))
+
+(defn- ^String cleansed [^String s]
+  (str/replace s #"[^a-zA-Z0-9_-]" "_"))
+
+(defn- cleansed-labels [sample]
+  (->> (interleave (.-labelNames sample) (.-labelValues sample))
+       (map cleansed)
+       (partition 2)))
+
+(defn serialize-sample [sample prefix timestamp]
+  [prefix
+   (cleansed (.name sample))
+   (for [[name value] (cleansed-labels sample)]
+     (format ".%s.%s" name value))
+   (format " %s %d\n" (.value sample) timestamp)])
+
+(defn serialize-metrics [timestamp prefix registry]
+  (let [samples (samples-from registry)]
+    (for [^Collector$MetricFamilySamples$Sample sample samples]
+      (serialize-sample sample prefix timestamp))))

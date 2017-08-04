@@ -48,13 +48,6 @@
     (is (= 2.0
            (.get ((metrics/snapshot) :app/requests))))))
 
-(defn- samples [registry]
-  (->> registry
-       (.metricFamilySamples)
-       (enumeration-seq)
-       (map #(vec (.-samples %)))
-       (flatten)))
-
 (deftest register+execute-test
   (testing "it allows to register metrics with the default registry on the fly"
     (metrics/register+execute! :app/requests (p/counter {}) (p/inc {}))
@@ -108,7 +101,7 @@
     (let [called-with (atom nil)]
       (with-redefs [p/set (fn [reg metric amount] (swap! called-with (constantly [metric amount])))]
         (metrics/register! (p/gauge :gauge1))
-        (metrics/set! :gauge1 5)
+        (metrics/update! :gauge1 5)
         (is (= [:gauge1 5]
                @called-with)))))
 
@@ -116,7 +109,7 @@
     (let [called-with (atom nil)]
       (with-redefs [p/set (fn [reg metric lb amount] (swap! called-with (constantly [metric lb amount])))]
         (metrics/register! (p/gauge :gauge2 {:labels [:a]}))
-        (metrics/set! :gauge2 {:a "a"} 5)
+        (metrics/update! :gauge2 {:a "a"} 5)
         (is (= [:gauge2 {:a "a"} 5]
                @called-with))))))
 
@@ -178,4 +171,13 @@
                                                                                                 :exception "java.lang.RuntimeException"})))))))
   (testing "it returns something"
     (is (= "test"
-           (metrics/measured-execution :fn-name  (constantly "test"))))))
+           (metrics/measured-execution :fn-name (constantly "test"))))))
+
+(deftest serialize-metrics-test
+  (testing "it serializes the test metric"
+    (metrics/register-counter! :test/cnt {:labels [:test-label]})
+    (metrics/inc! :test/cnt {:test-label "blub"})
+    (is (= '(["test"
+              "test_cnt"
+              (".test_label.blub")
+              " 1.0 1234\n"]) (metrics/serialize-metrics 1234 "test" (metrics/snapshot))))))
