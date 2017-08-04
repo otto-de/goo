@@ -16,6 +16,6 @@
     (->> (callback-fn)
          (double)
          (Collector$MetricFamilySamples$Sample. name [] [])
-         (conj [])
+         (vector)
          (Collector$MetricFamilySamples. name (Collector$Type/GAUGE) help)
-         (conj []))))
+         (vector))))
