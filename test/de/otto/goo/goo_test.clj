@@ -128,9 +128,9 @@
            (#'metrics/compojure-path->url-path "/path1/:id/path2")))))
 
 (deftest timing-middleware-test
-  (let [response (constantly {:status 200})
-        route (metrics/timing-middleware response)
-        get-request {:compojure/route [:get "/path1/path2/:id"]}
+  (let [response     (constantly {:status 200})
+        route        (metrics/timing-middleware response)
+        get-request  {:compojure/route [:get "/path1/path2/:id"]}
         get2-request {:compojure/route [:get "dummy"]}
         post-request {:compojure/route [:post "/path1/path2/:id"]}]
     (testing "it returns the response of the response fn"
@@ -174,12 +174,29 @@
     (is (= "test"
            (metrics/measured-execution :fn-name (constantly "test"))))))
 
-(deftest callback-gauge-test
+(defn value
+  ([name]
+    (-> (metrics/snapshot) (.raw) (.getSampleValue name)))
+  ([name lables values]
+    (-> (metrics/snapshot) (.raw) (.getSampleValue name (into-array String lables) (into-array values)))))
+
+  (deftest callback-gauge-test
   (testing "callback gauge val changes if callback function returns different val"
     (metrics/clear-default-registry!)
-    (let [foo (atom 1)
-          gauge-val #(-> (metrics/snapshot) (.raw) (.getSampleValue "callback"))
-          gauge (metrics/register-callback-gauge! "callback" "help" #(deref foo))]
-      (is (= 1.0 (gauge-val)))
+    (let [foo       (atom 1)]
+      (metrics/register-callback-gauge! "callback" "help" #(deref foo))
+      (is (= 1.0 (value "callback")))
       (swap! foo inc)
-      (is (= 2.0  (gauge-val))))))
+      (is (= 2.0 (value "callback")))))
+  (testing "use labels"
+    (metrics/clear-default-registry!)
+    (let [foo (atom 1)
+          bar (atom 2)]
+      (metrics/register-callback-gauge! "callback" "help" #(deref foo) (into-array ["atom"]) (into-array ["foo"]))
+      (metrics/register-callback-gauge! "callback" "help" #(deref bar) (into-array ["atom"]) (into-array ["bar"]))
+      (is (= 1.0 (value "callback" ["atom"] ["foo"])))
+      (is (= 2.0 (value "callback" ["atom"] ["bar"])))
+      (swap! foo inc)
+      (swap! bar inc)
+      (is (= 2.0 (value "callback" ["atom"] ["foo"])))
+      (is (= 3.0 (value "callback" ["atom"] ["bar"]))))))
