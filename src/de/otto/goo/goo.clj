@@ -6,8 +6,7 @@
             [iapetos.metric :as metric]
             [clojure.string :as str])
   (:import (iapetos.registry IapetosRegistry)
-           (io.prometheus.client SimpleCollector Collector CollectorRegistry Collector$MetricFamilySamples Collector$MetricFamilySamples$Sample Gauge Gauge$Child)
-           (de.otto.goo CallbackGauge)))
+           (io.prometheus.client SimpleCollector Collector CollectorRegistry Collector$MetricFamilySamples Collector$MetricFamilySamples$Sample Gauge Gauge$Child)))
 
 (def empty-registry (p/collector-registry))
 

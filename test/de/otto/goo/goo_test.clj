@@ -4,8 +4,7 @@
             [iapetos.core :as p]
             [clojure.tools.logging :as log]
             [clojure.string :as str])
-  (:import (iapetos.registry IapetosRegistry)
-           (de.otto.goo CallbackGauge)))
+  (:import (iapetos.registry IapetosRegistry)))
 
 (use-fixtures :each #(do (metrics/clear-default-registry!) (%)))
 
