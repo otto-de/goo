@@ -89,24 +89,25 @@
         (inc! :http/calls-total labels)
         (prom/with-duration (get-from-default-registry :http/duration-in-s labels) response)))))
 
-(defn- milli-to-seconds [milliseconds]
+(defn milli-to-seconds [milliseconds]
   (double (/ milliseconds (* 1000))))
 
-(defn timed [metric-name labels->values fn & fn-params]
-  (quiet-register! (prom/histogram metric-name {:labels (conj (keys labels->values) :exception) :buckets [0.001 0.005 0.01 0.02 0.05 0.1]}))
-  (let [start-time (System/currentTimeMillis)]
-    (try
-      (let [result (apply fn fn-params)]
-        (observe! metric-name (merge labels->values {:exception :none})
-                  (milli-to-seconds (- (System/currentTimeMillis) start-time)))
-        result)
-      (catch Exception e
-        (observe! metric-name (merge labels->values {:exception (.getName (class e))})
-                  (milli-to-seconds (- (System/currentTimeMillis) start-time)))
-        (throw e)))))
+(defmacro timed [metric-name labels->values body]
+  `(do
+     (quiet-register! (prom/histogram ~metric-name {:labels (conj (keys ~labels->values) :exception) :buckets [0.001 0.005 0.01 0.02 0.05 0.1]}))
+     (let [start-time# (System/currentTimeMillis)]
+       (try
+         (let [result# ~body]
+           (observe! ~metric-name (merge ~labels->values {:exception :none})
+                     (milli-to-seconds (- (System/currentTimeMillis) start-time#)))
+           result#)
+         (catch Exception e#
+           (observe! ~metric-name (merge ~labels->values {:exception (.getName (class e#))})
+                     (milli-to-seconds (- (System/currentTimeMillis) start-time#)))
+           (throw e#))))))
 
 (defn measured-execution [fn-name fn & fn-params]
-  (apply timed :measured-execution/execution-time-in-s {:function fn-name} fn fn-params))
+  (timed :measured-execution/execution-time-in-s {:function fn-name} (apply fn fn-params)))
 
 (defn samples-from [registry]
   (->> registry

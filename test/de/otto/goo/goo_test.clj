@@ -155,13 +155,14 @@
 
 (deftest measured-execution-test
   (testing "it measures the execution time of the given body"
-    (metrics/measured-execution :test-fn #(Thread/sleep %) 2)
-    (is (= 0.0
-           (first (.-buckets (.get ((metrics/snapshot) :measured-execution/execution-time-in-s {:function  :test-fn
-                                                                                                :exception :none}))))))
-    (is (= 1.0
-           (second (.-buckets (.get ((metrics/snapshot) :measured-execution/execution-time-in-s {:function  :test-fn
-                                                                                                 :exception :none})))))))
+    (metrics/clear-default-registry!)
+    (let [times-called (atom 0)]
+      (metrics/measured-execution :test-fn #(do (swap! times-called inc) (Thread/sleep %)) 2)
+      (is (= 0.0
+             (first (.-buckets (.get ((metrics/snapshot) :measured-execution/execution-time-in-s {:function  :test-fn :exception :none}))))))
+      (is (= 1 @times-called))
+      (is (= 1.0
+             (second (.-buckets (.get ((metrics/snapshot) :measured-execution/execution-time-in-s {:function  :test-fn :exception :none}))))))))
   (testing "it measures exceptions"
     (try
       (metrics/measured-execution :test-fn #(throw (RuntimeException.)))
