@@ -1,4 +1,4 @@
-(defproject de.otto/goo "0.3.3"
+(defproject de.otto/goo "0.3.4-SNAPSHOT"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :url "https://github.com/otto-de/goo"
