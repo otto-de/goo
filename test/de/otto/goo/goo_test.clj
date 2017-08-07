@@ -174,15 +174,15 @@
            (metrics/measured-execution :fn-name (constantly "test"))))))
 
 (defn value
-  ([name]
-    (-> (metrics/snapshot) (.raw) (.getSampleValue name)))
+  ([gauge-name]
+   (-> (metrics/snapshot) (.raw) (.getSampleValue (name gauge-name))))
   ([name lables values]
-    (-> (metrics/snapshot) (.raw) (.getSampleValue name (into-array String lables) (into-array values)))))
+   (-> (metrics/snapshot) (.raw) (.getSampleValue name (into-array String lables) (into-array values)))))
 
-  (deftest callback-gauge-test
+(deftest callback-gauge-test
   (testing "callback gauge val changes if callback function returns different val"
     (metrics/clear-default-registry!)
-    (let [foo       (atom 1)]
+    (let [foo (atom 1)]
       (metrics/register-callback-gauge! "callback" "help" #(deref foo))
       (is (= 1.0 (value "callback")))
       (swap! foo inc)
@@ -191,11 +191,21 @@
     (metrics/clear-default-registry!)
     (let [foo (atom 1)
           bar (atom 2)]
-      (metrics/register-callback-gauge! "callback" "help" #(deref foo) (into-array ["atom"]) (into-array ["foo"]))
-      (metrics/register-callback-gauge! "callback" "help" #(deref bar) (into-array ["atom"]) (into-array ["bar"]))
+      (metrics/register-callback-gauge! "callback" "help" #(deref foo) {"atom" "foo"})
+      (metrics/register-callback-gauge! "callback" "help" #(deref bar) {"atom" "bar"})
       (is (= 1.0 (value "callback" ["atom"] ["foo"])))
       (is (= 2.0 (value "callback" ["atom"] ["bar"])))
       (swap! foo inc)
       (swap! bar inc)
       (is (= 2.0 (value "callback" ["atom"] ["foo"])))
-      (is (= 3.0 (value "callback" ["atom"] ["bar"]))))))
+      (is (= 3.0 (value "callback" ["atom"] ["bar"])))))
+  (testing "namespaced keywords work too"
+    (metrics/clear-default-registry!)
+    (let [foo (atom 1)
+          bar (atom 8)]
+      (metrics/register-callback-gauge! :my/callback "help" #(deref foo) {:atom :foo})
+      (is (= 1.0 (value "my_callback" ["atom"] ["foo"])))
+      (metrics/register-callback-gauge! :my/callback "help" #(deref bar) {:atom :bar})
+      (is (= 8.0 (value "my_callback" ["atom"] ["bar"])))
+      (swap! bar inc)
+      (is (= 9.0 (value "my_callback" ["atom"] ["bar"]))))))

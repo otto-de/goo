@@ -122,17 +122,27 @@
   (register! (p/gauge name options))
   (update! name initial))
 
+(defn- sanitize [name]
+  (iapetos.metric/sanitize (str name)))
+
+(defn- label-names [labels->values]
+  (into-array String (map name (keys labels->values))))
+
+(defn- label-values [labels->values]
+  (into-array String (map name (vals labels->values))))
+
 (defn register-callback-gauge!
-  ([^String name ^String help callback-fn]
-    (register-callback-gauge! name help callback-fn (make-array String 0)(make-array String 0) ))
-  ([^String name ^String help callback-fn label-names label-values]
-   (if-let [collector (get-from-default-registry name)]
-     (.setChild collector (proxy [Gauge$Child] [] (get [] (callback-fn))) label-values)
-     (-> (Gauge/build name help)
-         (.labelNames label-names)
+  "Register a gauge that uses a callback function to determine its value."
+  ([name ^String help callback-fn]
+    (register-callback-gauge! name help callback-fn {} ))
+  ([name ^String help callback-fn labels->values]
+   (if-let [collector (get-from-default-registry (sanitize name))]
+     (.setChild collector (proxy [Gauge$Child] [] (get [] (callback-fn))) (label-values labels->values))
+     (-> (Gauge/build (sanitize name) help)
+         (.labelNames (label-names labels->values))
          (.create)
-         (.setChild (proxy [Gauge$Child] [] (get [] (callback-fn))) label-values)
-         (#(register-as name %))))
+         (.setChild (proxy [Gauge$Child] [] (get [] (callback-fn))) (label-values labels->values))
+         (#(register-as (sanitize name) %))))
     ))
 (defn register-summary! [name options]
   (register! (p/summary name options)))
