@@ -92,20 +92,21 @@
 (defn- milli-to-seconds [milliseconds]
   (double (/ milliseconds (* 1000))))
 
-(defn measured-execution
-  ([fn-name fn & fn-params]
-   (quiet-register! (prom/histogram :measured-execution/execution-time-in-s
-                                    {:labels [:function :exception] :buckets [0.001 0.005 0.01 0.02 0.05 0.1]}))
-   (let [start-time (System/currentTimeMillis)]
-     (try
-       (let [result (apply fn fn-params)]
-         (observe! :measured-execution/execution-time-in-s {:function fn-name :exception :none}
-                   (milli-to-seconds (- (System/currentTimeMillis) start-time)))
-         result)
-       (catch Exception e
-         (observe! :measured-execution/execution-time-in-s {:function fn-name :exception (.getName (class e))}
-                   (milli-to-seconds (- (System/currentTimeMillis) start-time)))
-         (throw e))))))
+(defn timed [metric-name labels->values fn & fn-params]
+  (quiet-register! (prom/histogram metric-name {:labels (conj (keys labels->values) :exception) :buckets [0.001 0.005 0.01 0.02 0.05 0.1]}))
+  (let [start-time (System/currentTimeMillis)]
+    (try
+      (let [result (apply fn fn-params)]
+        (observe! metric-name (merge labels->values {:exception :none})
+                  (milli-to-seconds (- (System/currentTimeMillis) start-time)))
+        result)
+      (catch Exception e
+        (observe! metric-name (merge labels->values {:exception (.getName (class e))})
+                  (milli-to-seconds (- (System/currentTimeMillis) start-time)))
+        (throw e)))))
+
+(defn measured-execution [fn-name fn & fn-params]
+  (apply timed :measured-execution/execution-time-in-s {:function fn-name} fn fn-params))
 
 (defn samples-from [registry]
   (->> registry
@@ -134,7 +135,7 @@
 (defn register-callback-gauge!
   "Register a gauge that uses a callback function to determine its value."
   ([name ^String help callback-fn]
-    (register-callback-gauge! name help callback-fn {} ))
+   (register-callback-gauge! name help callback-fn {}))
   ([name ^String help callback-fn labels->values]
    (if-let [collector (get-from-default-registry (sanitize name))]
      (.setChild collector (proxy [Gauge$Child] [] (get [] (callback-fn))) (label-values labels->values))
