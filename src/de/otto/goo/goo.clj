@@ -35,8 +35,7 @@
       (action e))))
 
 (defn- register-as [metric collector]
-  (swap! default-registry (fn [r] (p/register-as r metric collector)))
-  )
+  (swap! default-registry (fn [r] (p/register-as r metric collector))))
 
 (defn register! [& ms]
   (register-with-action #(log/warn (.getMessage %)) ms))
@@ -66,8 +65,19 @@
        (register! (~(first m) ~name ~@(rest m))))
      (~(first op) (snapshot) ~name ~@(rest op))))
 
-(defn text-format []
-  (e/text-format (snapshot)))
+(defn register-counter! [name options]
+  (register! (p/counter name options)))
+
+(defn register-gauge! [name options initial]
+  (register! (p/gauge name options))
+  (update! name initial))
+
+(defn register-summary! [name options]
+  (register! (p/summary name options)))
+
+(defn register-histogram! [name options]
+  (register! (p/histogram name options)))
+
 
 (defn- compojure-path->url-path [cpj-path]
   (->> (str/split cpj-path #"/")
@@ -109,20 +119,6 @@
 (defn measured-execution [fn-name fn & fn-params]
   (timed :measured-execution/execution-time-in-s {:function fn-name} (apply fn fn-params)))
 
-(defn samples-from [registry]
-  (->> registry
-       (.raw)
-       (.metricFamilySamples)
-       (enumeration-seq)
-       (map #(vec (.-samples %)))
-       (flatten)))
-
-(defn register-counter! [name options]
-  (register! (p/counter name options)))
-
-(defn register-gauge! [name options initial]
-  (register! (p/gauge name options))
-  (update! name initial))
 
 (defn- sanitize [name]
   (iapetos.metric/sanitize (str name)))
@@ -144,13 +140,16 @@
          (.labelNames (label-names labels->values))
          (.create)
          (.setChild (proxy [Gauge$Child] [] (get [] (callback-fn))) (label-values labels->values))
-         (#(register-as (sanitize name) %))))
-    ))
-(defn register-summary! [name options]
-  (register! (p/summary name options)))
+         (#(register-as (sanitize name) %))))))
 
-(defn register-histogram! [name options]
-  (register! (p/histogram name options)))
+
+(defn samples-from [registry]
+  (->> registry
+       (.raw)
+       (.metricFamilySamples)
+       (enumeration-seq)
+       (map #(vec (.-samples %)))
+       (flatten)))
 
 (defn- ^String cleansed [^String s]
   (str/replace s #"[^a-zA-Z0-9_-]" "_"))
@@ -171,3 +170,6 @@
   (let [samples (samples-from registry)]
     (for [^Collector$MetricFamilySamples$Sample sample samples]
       (serialize-sample sample prefix timestamp))))
+
+(defn text-format []
+  (e/text-format (snapshot)))
