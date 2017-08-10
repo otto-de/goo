@@ -4,7 +4,8 @@
             [iapetos.core :as p]
             [clojure.tools.logging :as log]
             [clojure.string :as str])
-  (:import (iapetos.registry IapetosRegistry)))
+  (:import (iapetos.registry IapetosRegistry)
+           (io.prometheus.client Collector$MetricFamilySamples$Sample)))
 
 (use-fixtures :each #(do (metrics/clear-default-registry!) (%)))
 
@@ -210,3 +211,17 @@
       (is (= 8.0 (value "my_callback" ["atom"] ["bar"])))
       (swap! bar inc)
       (is (= 9.0 (value "my_callback" ["atom"] ["bar"]))))))
+
+(deftest serialize-sample-test
+  (testing "it serializes a single sample"
+    (let [sample (Collector$MetricFamilySamples$Sample. "name" [] [] 2.0)]
+      (is (= ["prefix" "name" [] " 2.0 12345\n"]
+             (metrics/serialize-sample sample "prefix" 12345))))
+    (let [sample (Collector$MetricFamilySamples$Sample. "name" ["l1" "l2"] ["v1" "v2"] 1.4)]
+      (is (= ["prefix" "name" [".l1.v1" ".l2.v2"] " 1.4 42\n"]
+             (metrics/serialize-sample sample "prefix" 42)))))
+  
+  (testing "it cleanses names and labels"
+    (let [sample (Collector$MetricFamilySamples$Sample. "NämE!" ["l$1" "l.2"] ["v@1" "v😀2"] 99.9)]
+      (is (= ["prefix" "N_mE_" [".l_1.v_1" ".l_2.v_2"] " 99.9 987\n"]
+             (metrics/serialize-sample sample "prefix" 987))))))
