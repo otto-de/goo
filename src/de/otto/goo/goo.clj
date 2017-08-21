@@ -68,16 +68,14 @@
 (defn register-counter! [name options]
   (register! (p/counter name options)))
 
-(defn register-gauge! [name options initial]
-  (register! (p/gauge name options))
-  (update! name initial))
+(defn register-gauge! [name options]
+  (register! (p/gauge name options)))
 
 (defn register-summary! [name options]
   (register! (p/summary name options)))
 
 (defn register-histogram! [name options]
   (register! (p/histogram name options)))
-
 
 (defn- compojure-path->url-path [cpj-path]
   (->> (str/split cpj-path #"/")
