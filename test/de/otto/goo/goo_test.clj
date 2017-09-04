@@ -78,7 +78,22 @@
         (metrics/register! (p/counter :cntr2 {:labels [:a]}))
         (metrics/inc! :cntr2 {:a "a"})
         (is (= [:cntr2 {:a "a"}]
-               @called-with))))))
+               @called-with)))))
+  (testing "counter can be incremented"
+    (metrics/clear-default-registry!)
+    (metrics/register-counter! :my/counter {})
+    (is (= 0.0 (.get ((metrics/snapshot) :my/counter))))
+    (metrics/inc! :my/counter {})
+    (is (= 1.0 (.get ((metrics/snapshot) :my/counter)))))
+  (testing "counter with labels can be incremented"
+    (metrics/clear-default-registry!)
+    (metrics/register-counter! :my/counter {:labels [:foo]})
+    (is (= 0.0 (.get ((metrics/snapshot) :my/counter))))
+    (metrics/inc! :my/counter {:foo :bar})
+    (is (= 0.0 (.get ((metrics/snapshot) :my/counter))))
+    (is (= 1.0 (.get ((metrics/snapshot) :my/counter {:foo :bar}))))))
+
+
 
 (deftest dec-test
   (testing "it calls the iapetos dec function with metric name"
@@ -160,10 +175,10 @@
     (let [times-called (atom 0)]
       (metrics/measured-execution :test-fn #(do (swap! times-called inc) (Thread/sleep %)) 2)
       (is (= 0.0
-             (first (.-buckets (.get ((metrics/snapshot) :measured-execution/execution-time-in-s {:function  :test-fn :exception :none}))))))
+             (first (.-buckets (.get ((metrics/snapshot) :measured-execution/execution-time-in-s {:function :test-fn :exception :none}))))))
       (is (= 1 @times-called))
       (is (= 1.0
-             (second (.-buckets (.get ((metrics/snapshot) :measured-execution/execution-time-in-s {:function  :test-fn :exception :none}))))))))
+             (second (.-buckets (.get ((metrics/snapshot) :measured-execution/execution-time-in-s {:function :test-fn :exception :none}))))))))
   (testing "it measures exceptions"
     (try
       (metrics/measured-execution :test-fn #(throw (RuntimeException.)))
