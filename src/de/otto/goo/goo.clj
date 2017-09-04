@@ -85,7 +85,7 @@
   (double (/ milliseconds 1000)))
 
 (defn timing-middleware [handler]
-  (quiet-register! (p/histogram :http/duration-in-s {:labels [:path :method :rc] :buckets [0.05 0.1 0.15 0.2]}))
+  (quiet-register! (p/histogram :http/duration-in-s {:labels [:path :method :rc] :buckets [0.001 0.005 0.01 0.05 0.1 0.5 1]}))
   (fn [request]
     (assert (:compojure/route request) "Couldn't get route out of request. Is middleware applied AFTER compojure route matcher?")
     (let [start-time (System/currentTimeMillis)
@@ -99,7 +99,7 @@
 
 (defmacro timed [metric-name labels->values body]
   `(do
-     (quiet-register! (prom/histogram ~metric-name {:labels (conj (keys ~labels->values) :exception) :buckets [0.001 0.005 0.01 0.02 0.05 0.1]}))
+     (quiet-register! (prom/histogram ~metric-name {:labels (conj (keys ~labels->values) :exception) :buckets [0.001 0.005 0.01 0.05 0.1 0.5 1]}))
      (let [start-time# (System/currentTimeMillis)]
        (try
          (let [result# ~body]

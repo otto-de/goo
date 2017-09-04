@@ -141,12 +141,11 @@
     (is (= "/path1/path2"
            (#'metrics/compojure-path->url-path "/path1/:id/path2")))))
 
-(defn collector-values [snapshot collector-name]
-  (->> (metrics/samples-from snapshot)
-       (filter #(= (.-name %) collector-name))
-       (mapv (fn [e] [(->> (interleave (map keyword (.-labelNames e)) (.-labelValues e)))
-                      (.-value e)]))
-       (into {})))
+(defn value
+  ([gauge-name]
+   (-> (metrics/snapshot) (.raw) (.getSampleValue (name gauge-name))))
+  ([name lables values]
+   (-> (metrics/snapshot) (.raw) (.getSampleValue name (into-array String lables) (into-array values)))))
 
 (deftest timing-middleware-test
   (let [response     {:status 200}
@@ -164,25 +163,25 @@
       (metrics/clear-default-registry!)
       ((metrics/timing-middleware handler) get-request)
       (let [snapshot (metrics/snapshot)]
-        (is (= {[:path "/path1/path2" :method ":get" :rc "200"] 1.0}
-               (collector-values snapshot "http_duration_in_s_count")))
-        (is (= [0.0 1.0 1.0 1.0 1.0]
+        (is (= 1.0
+               (value "http_duration_in_s_count" ["path" "method" "rc"] ["/path1/path2" ":get" "200"])))
+        (is (= [0.0 0.0 0.0 0.0 1.0 1.0 1.0 1.0]
                (seq (.buckets (.get (snapshot :http/duration-in-s {:rc 200 :method :get :path "/path1/path2"}))))))))
     (testing "it creates metrics for a two post requests"
       (metrics/clear-default-registry!)
       ((metrics/timing-middleware handler) post-request)
       ((metrics/timing-middleware handler) post-request)
       (let [snapshot (metrics/snapshot)]
-        (is (= {[:path "/path1/path2" :method ":post" :rc "200"] 2.0}
-               (collector-values snapshot "http_duration_in_s_count")))
-        (is (= [0.0 2.0 2.0 2.0 2.0]
+        (is (= 2.0
+               (value "http_duration_in_s_count" ["path" "method" "rc"] ["/path1/path2" ":post" "200"])))
+        (is (= [0.0 0.0 0.0 0.0 2.0 2.0 2.0 2.0]
                (seq (.buckets (.get (snapshot :http/duration-in-s {:rc 200 :method :post :path "/path1/path2"}))))))))))
 
 (deftest measured-execution-test
   (testing "it measures the execution time of the given body"
     (metrics/clear-default-registry!)
     (let [times-called (atom 0)]
-      (metrics/measured-execution :test-fn #(do (swap! times-called inc) (Thread/sleep %)) 2)
+      (metrics/measured-execution :test-fn #(do (swap! times-called inc) (Thread/sleep 2)))
       (is (= 0.0
              (first (.-buckets (.get ((metrics/snapshot) :measured-execution/execution-time-in-s {:function :test-fn :exception :none}))))))
       (is (= 1 @times-called))
@@ -190,20 +189,17 @@
              (second (.-buckets (.get ((metrics/snapshot) :measured-execution/execution-time-in-s {:function :test-fn :exception :none}))))))))
   (testing "it measures exceptions"
     (try
-      (metrics/measured-execution :test-fn #(throw (RuntimeException.)))
+      (metrics/measured-execution :test-fn #(do (Thread/sleep 2) (throw (RuntimeException.))))
       (catch RuntimeException _))
+    (is (= 0.0
+           (first (.-buckets (.get ((metrics/snapshot) :measured-execution/execution-time-in-s {:function :test-fn :exception "java.lang.RuntimeException"}))))))
     (is (= 1.0
-           (first (.-buckets (.get ((metrics/snapshot) :measured-execution/execution-time-in-s {:function  :test-fn
-                                                                                                :exception "java.lang.RuntimeException"})))))))
+           (second (.-buckets (.get ((metrics/snapshot) :measured-execution/execution-time-in-s {:function  :test-fn
+                                                                                                 :exception "java.lang.RuntimeException"})))))))
   (testing "it returns something"
     (is (= "test"
            (metrics/measured-execution :fn-name (constantly "test"))))))
 
-(defn value
-  ([gauge-name]
-   (-> (metrics/snapshot) (.raw) (.getSampleValue (name gauge-name))))
-  ([name lables values]
-   (-> (metrics/snapshot) (.raw) (.getSampleValue name (into-array String lables) (into-array values)))))
 
 (deftest callback-gauge-test
   (testing "callback gauge val changes if callback function returns different val"
