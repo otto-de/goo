@@ -141,6 +141,13 @@
     (is (= "/path1/path2"
            (#'metrics/compojure-path->url-path "/path1/:id/path2")))))
 
+(defn collector-values [snapshot collector-name]
+  (->> (metrics/samples-from snapshot)
+       (filter #(= (.-name %) collector-name))
+       (mapv (fn [e] [(->> (interleave (map keyword (.-labelNames e)) (.-labelValues e)))
+                      (.-value e)]))
+       (into {})))
+
 (deftest timing-middleware-test
   (let [response     {:status 200}
         handler      (fn [& _] (Thread/sleep 90) response)
@@ -148,24 +155,28 @@
         get2-request {:compojure/route [:get "dummy"]}
         post-request {:compojure/route [:post "/path1/path2/:id"]}]
     (testing "it returns the response of the handler fn"
-        (is (= response
-               ((metrics/timing-middleware handler) get2-request))))
+      (is (= response
+             ((metrics/timing-middleware handler) get2-request))))
     (testing "it returns nil if the handler returns nil"
-        (is (= nil
-               ((metrics/timing-middleware (constantly nil)) get2-request))))
+      (is (= nil
+             ((metrics/timing-middleware (constantly nil)) get2-request))))
     (testing "it creates metrics for a given wrapped get request"
-        ((metrics/timing-middleware handler) get-request)
-        (let [snapshot (metrics/snapshot)]
-          (is (= 1.0
-                 (.get (snapshot :http/calls-total {:rc 200 :method :get :path "/path1/path2"}))))
-          (is (= [0.0 1.0 1.0 1.0 1.0]
-                 (seq (.buckets (.get (snapshot :http/duration-in-s {:rc 200 :method :get :path "/path1/path2"}))))))))
-    (testing "it creates metrics for a given post request"
+      (metrics/clear-default-registry!)
+      ((metrics/timing-middleware handler) get-request)
+      (let [snapshot (metrics/snapshot)]
+        (is (= {[:path "/path1/path2" :method ":get" :rc "200"] 1.0}
+               (collector-values snapshot "http_duration_in_s_count")))
+        (is (= [0.0 1.0 1.0 1.0 1.0]
+               (seq (.buckets (.get (snapshot :http/duration-in-s {:rc 200 :method :get :path "/path1/path2"}))))))))
+    (testing "it creates metrics for a two post requests"
+      (metrics/clear-default-registry!)
       ((metrics/timing-middleware handler) post-request)
-      (is (= 1.0
-             (.get ((metrics/snapshot) :http/calls-total {:rc 200 :method :post :path "/path1/path2"}))))
-      (is (= [0.0 1.0 1.0 1.0 1.0]
-             (seq (.buckets (.get ((metrics/snapshot) :http/duration-in-s {:rc 200 :method :post :path "/path1/path2"})))))))))
+      ((metrics/timing-middleware handler) post-request)
+      (let [snapshot (metrics/snapshot)]
+        (is (= {[:path "/path1/path2" :method ":post" :rc "200"] 2.0}
+               (collector-values snapshot "http_duration_in_s_count")))
+        (is (= [0.0 2.0 2.0 2.0 2.0]
+               (seq (.buckets (.get (snapshot :http/duration-in-s {:rc 200 :method :post :path "/path1/path2"}))))))))))
 
 (deftest measured-execution-test
   (testing "it measures the execution time of the given body"

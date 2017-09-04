@@ -85,9 +85,7 @@
   (double (/ milliseconds 1000)))
 
 (defn timing-middleware [handler]
-  (let [http-labels [:path :method :rc]]
-    (quiet-register! (p/histogram :http/duration-in-s {:labels http-labels :buckets [0.05 0.1 0.15 0.2]}))
-    (quiet-register! (p/counter :http/calls-total {:labels http-labels})))
+  (quiet-register! (p/histogram :http/duration-in-s {:labels [:path :method :rc] :buckets [0.05 0.1 0.15 0.2]}))
   (fn [request]
     (assert (:compojure/route request) "Couldn't get route out of request. Is middleware applied AFTER compojure route matcher?")
     (let [start-time (System/currentTimeMillis)
@@ -96,7 +94,6 @@
           labels     {:path   (compojure-path->url-path path)
                       :method method
                       :rc     (:status response)}]
-      (inc! :http/calls-total labels)
       (observe! :http/duration-in-s labels (milli-to-seconds (- (System/currentTimeMillis) start-time)))
       response)))
 
