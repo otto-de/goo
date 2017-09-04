@@ -4,8 +4,7 @@
             [iapetos.core :as p]
             [clojure.tools.logging :as log]
             [clojure.string :as str])
-  (:import (iapetos.registry IapetosRegistry)
-           (io.prometheus.client Collector$MetricFamilySamples$Sample)))
+  (:import (io.prometheus.client Collector$MetricFamilySamples$Sample)))
 
 (use-fixtures :each #(do (metrics/clear-default-registry!) (%)))
 
@@ -66,7 +65,7 @@
 (deftest inc-test
   (testing "it calls the iapetos inc function with metric name"
     (let [called-with (atom nil)]
-      (with-redefs [p/inc (fn [reg metric] (swap! called-with (constantly metric)))]
+      (with-redefs [p/inc (fn [_ metric] (swap! called-with (constantly metric)))]
         (metrics/register! (p/counter :cntr1))
         (metrics/inc! :cntr1)
         (is (= :cntr1
@@ -74,7 +73,7 @@
 
   (testing "it calls the iapetos inc function with metric name and labels"
     (let [called-with (atom nil)]
-      (with-redefs [p/inc (fn [reg metric lb] (swap! called-with (constantly [metric lb])))]
+      (with-redefs [p/inc (fn [_ metric lb] (swap! called-with (constantly [metric lb])))]
         (metrics/register! (p/counter :cntr2 {:labels [:a]}))
         (metrics/inc! :cntr2 {:a "a"})
         (is (= [:cntr2 {:a "a"}]
@@ -98,7 +97,7 @@
 (deftest dec-test
   (testing "it calls the iapetos dec function with metric name"
     (let [called-with (atom nil)]
-      (with-redefs [p/dec (fn [reg metric] (swap! called-with (constantly metric)))]
+      (with-redefs [p/dec (fn [_ metric] (swap! called-with (constantly metric)))]
         (metrics/register! (p/gauge :gauge1))
         (metrics/dec! :gauge1)
         (is (= :gauge1
@@ -106,7 +105,7 @@
 
   (testing "it calls the iapetos dec function with metric name and labels"
     (let [called-with (atom nil)]
-      (with-redefs [p/dec (fn [reg metric lb] (swap! called-with (constantly [metric lb])))]
+      (with-redefs [p/dec (fn [_ metric lb] (swap! called-with (constantly [metric lb])))]
         (metrics/register! (p/gauge :gauge2 {:labels [:a]}))
         (metrics/dec! :gauge2 {:a "a"})
         (is (= [:gauge2 {:a "a"}]
@@ -115,7 +114,7 @@
 (deftest set-macro-test
   (testing "it calls the iapetos set function with metric name"
     (let [called-with (atom nil)]
-      (with-redefs [p/set (fn [reg metric amount] (swap! called-with (constantly [metric amount])))]
+      (with-redefs [p/set (fn [_ metric amount] (swap! called-with (constantly [metric amount])))]
         (metrics/register! (p/gauge :gauge1))
         (metrics/update! :gauge1 5)
         (is (= [:gauge1 5]
@@ -123,7 +122,7 @@
 
   (testing "it calls the iapetos set function with metric name and labels"
     (let [called-with (atom nil)]
-      (with-redefs [p/set (fn [reg metric lb amount] (swap! called-with (constantly [metric lb amount])))]
+      (with-redefs [p/set (fn [_ metric lb amount] (swap! called-with (constantly [metric lb amount])))]
         (metrics/register! (p/gauge :gauge2 {:labels [:a]}))
         (metrics/update! :gauge2 {:a "a"} 5)
         (is (= [:gauge2 {:a "a"} 5]
@@ -143,31 +142,30 @@
            (#'metrics/compojure-path->url-path "/path1/:id/path2")))))
 
 (deftest timing-middleware-test
-  (let [response     (constantly {:status 200})
-        route        (metrics/timing-middleware response)
+  (let [response     {:status 200}
+        handler      (fn [& _] (Thread/sleep 90) response)
         get-request  {:compojure/route [:get "/path1/path2/:id"]}
         get2-request {:compojure/route [:get "dummy"]}
         post-request {:compojure/route [:post "/path1/path2/:id"]}]
-    (testing "it returns the response of the response fn"
-      (is (= (response)
-             ((metrics/timing-middleware response) get2-request))))
-
-    (testing "it returns nil if the response fn returns nil"
-      (is (= nil
-             ((metrics/timing-middleware (constantly nil)) get2-request))))
-
-    (testing "it creates metrics for a given wrapped get-route"
-      (route get-request)
-      (is (= 1.0
-             (.get ((metrics/snapshot) :http/calls-total {:rc 200 :method :get :path "/path1/path2"}))))
-      (is (> (.sum (.get ((metrics/snapshot) :http/duration-in-s {:rc 200 :method :get :path "/path1/path2"})))
-             0)))
-    (testing "it creates metrics for a given wrapped post-route"
-      (route post-request)
+    (testing "it returns the response of the handler fn"
+        (is (= response
+               ((metrics/timing-middleware handler) get2-request))))
+    (testing "it returns nil if the handler returns nil"
+        (is (= nil
+               ((metrics/timing-middleware (constantly nil)) get2-request))))
+    (testing "it creates metrics for a given wrapped get request"
+        ((metrics/timing-middleware handler) get-request)
+        (let [snapshot (metrics/snapshot)]
+          (is (= 1.0
+                 (.get (snapshot :http/calls-total {:rc 200 :method :get :path "/path1/path2"}))))
+          (is (= [0.0 1.0 1.0 1.0 1.0]
+                 (seq (.buckets (.get (snapshot :http/duration-in-s {:rc 200 :method :get :path "/path1/path2"}))))))))
+    (testing "it creates metrics for a given post request"
+      ((metrics/timing-middleware handler) post-request)
       (is (= 1.0
              (.get ((metrics/snapshot) :http/calls-total {:rc 200 :method :post :path "/path1/path2"}))))
-      (is (> (.sum (.get ((metrics/snapshot) :http/duration-in-s {:rc 200 :method :post :path "/path1/path2"})))
-             0)))))
+      (is (= [0.0 1.0 1.0 1.0 1.0]
+             (seq (.buckets (.get ((metrics/snapshot) :http/duration-in-s {:rc 200 :method :post :path "/path1/path2"})))))))))
 
 (deftest measured-execution-test
   (testing "it measures the execution time of the given body"
@@ -182,7 +180,7 @@
   (testing "it measures exceptions"
     (try
       (metrics/measured-execution :test-fn #(throw (RuntimeException.)))
-      (catch RuntimeException e))
+      (catch RuntimeException _))
     (is (= 1.0
            (first (.-buckets (.get ((metrics/snapshot) :measured-execution/execution-time-in-s {:function  :test-fn
                                                                                                 :exception "java.lang.RuntimeException"})))))))
@@ -235,7 +233,7 @@
     (let [sample (Collector$MetricFamilySamples$Sample. "name" ["l1" "l2"] ["v1" "v2"] 1.4)]
       (is (= ["prefix" "name" [".l1.v1" ".l2.v2"] " 1.4 42\n"]
              (metrics/serialize-sample sample "prefix" 42)))))
-  
+
   (testing "it cleanses names and labels"
     (let [sample (Collector$MetricFamilySamples$Sample. "NämE!" ["l$1" "l.2"] ["v@1" "v😀2"] 99.9)]
       (is (= ["prefix" "N_mE_" [".l_1.v_1" ".l_2.v_2"] " 99.9 987\n"]

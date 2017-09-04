@@ -3,10 +3,8 @@
             [iapetos.export :as e]
             [clojure.tools.logging :as log]
             [iapetos.core :as prom]
-            [iapetos.metric :as metric]
             [clojure.string :as str])
-  (:import (iapetos.registry IapetosRegistry)
-           (io.prometheus.client SimpleCollector Collector CollectorRegistry Collector$MetricFamilySamples Collector$MetricFamilySamples$Sample Gauge Gauge$Child)))
+  (:import (io.prometheus.client Collector$MetricFamilySamples$Sample Gauge Gauge$Child)))
 
 (def empty-registry (p/collector-registry))
 
@@ -83,22 +81,24 @@
        (filter #(not (re-matches #"^:.*" %)))
        (str/join "/")))
 
+(defn milli-to-seconds [milliseconds]
+  (double (/ milliseconds 1000)))
+
 (defn timing-middleware [handler]
   (let [http-labels [:path :method :rc]]
     (quiet-register! (p/histogram :http/duration-in-s {:labels http-labels :buckets [0.05 0.1 0.15 0.2]}))
     (quiet-register! (p/counter :http/calls-total {:labels http-labels})))
   (fn [request]
     (assert (:compojure/route request) "Couldn't get route out of request. Is middleware applied AFTER compojure route matcher?")
-    (if-let [response (handler request)]
-      (let [[method path] (:compojure/route request)
-            labels {:path   (compojure-path->url-path path)
-                    :method method
-                    :rc     (:status response)}]
-        (inc! :http/calls-total labels)
-        (prom/with-duration (get-from-default-registry :http/duration-in-s labels) response)))))
-
-(defn milli-to-seconds [milliseconds]
-  (double (/ milliseconds (* 1000))))
+    (let [start-time (System/currentTimeMillis)
+          response   (handler request)
+          [method path] (:compojure/route request)
+          labels     {:path   (compojure-path->url-path path)
+                      :method method
+                      :rc     (:status response)}]
+      (inc! :http/calls-total labels)
+      (observe! :http/duration-in-s labels (milli-to-seconds (- (System/currentTimeMillis) start-time)))
+      response)))
 
 (defmacro timed [metric-name labels->values body]
   `(do
