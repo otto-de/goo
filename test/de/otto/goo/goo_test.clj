@@ -177,6 +177,14 @@
         (is (= [0.0 0.0 0.0 0.0 2.0 2.0 2.0 2.0]
                (seq (.buckets (.get (snapshot :http/duration-in-s {:rc 200 :method :post :path "/path1/path2"}))))))))))
 
+(deftest timed-test
+  (testing "for the timed macro on can determine the buckets optionally"
+    (metrics/clear-default-registry!)
+    (let [times-called (atom 0)]
+      (= 1 (metrics/timed :mytest/metric {} (do (swap! times-called inc) (Thread/sleep 2) @times-called) [0.001 0.1]))
+      (is (= [0.0 1.0 1.0] (seq (.buckets (.get ((metrics/snapshot) :mytest/metric {:exception :none}))))))
+      (is (= 1 @times-called)))))
+
 (deftest measured-execution-test
   (testing "it measures the execution time of the given body"
     (metrics/clear-default-registry!)
