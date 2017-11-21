@@ -110,6 +110,7 @@
          (catch Exception e#
            (observe! ~metric-name (merge ~labels->values {:exception (.getName (class e#))})
                      (milli-to-seconds (- (System/currentTimeMillis) start-time#)))
+           (log/error e#)
            (throw e#))))))
 
 (defn measured-execution [fn-name fn & fn-params]
