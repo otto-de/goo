@@ -132,13 +132,7 @@
   (testing "it returns a metric with a specific label"
     (metrics/register! (p/counter :counter1) {:labels [:a]})
     (is (= ((metrics/snapshot) :counter1)
-           (metrics/get-from-default-registry :counter1 {:a "a"}))))
-  (testing "register funcion is memoized"
-    (let [histogram (p/histogram :http/duration-in-s)]
-      (metrics/quiet-register! histogram)
-      (with-redefs [p/register (fn [& _] (throw ( "register-with-action should be cached")))]
-        (is (not= nil (metrics/quiet-register! histogram))))))
-  )
+           (metrics/get-from-default-registry :counter1 {:a "a"})))))
 
 (deftest compojure-path->url-path-test
   (testing "it removes params from path"
