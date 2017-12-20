@@ -38,11 +38,16 @@
 (defn- register-as [metric collector]
   (swap! default-registry (fn [r] (p/register-as r metric collector))))
 
+(defn log-message [e]
+  (log/warn (.getMessage e)))
+
 (defn register! [& ms]
-  (register-with-action-cached #(log/warn (.getMessage %)) ms))
+  (register-with-action-cached log-message ms))
+
+(defn do-nothing [_])
 
 (defn quiet-register! [& ms]
-  (register-with-action-cached (fn [_]) ms))
+  (register-with-action-cached do-nothing ms))
 
 ;TODO:
 ;(defn get-metric-value [name]
