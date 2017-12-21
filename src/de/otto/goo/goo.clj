@@ -33,16 +33,14 @@
     (catch IllegalArgumentException e
       (action e))))
 
-(def register-with-action-cached (memoize register-with-action))
-
 (defn- register-as [metric collector]
   (swap! default-registry (fn [r] (p/register-as r metric collector))))
 
 (defn register! [& ms]
-  (register-with-action-cached #(log/warn (.getMessage %)) ms))
+  (register-with-action #(log/warn (.getMessage %)) ms))
 
 (defn quiet-register! [& ms]
-  (register-with-action-cached (fn [_]) ms))
+  (register-with-action (fn [_]) ms))
 
 ;TODO:
 ;(defn get-metric-value [name]
