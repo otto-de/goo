@@ -183,7 +183,12 @@
     (let [times-called (atom 0)]
       (= 1 (metrics/timed :mytest/metric {} (do (swap! times-called inc) (Thread/sleep 2) @times-called) [0.001 0.1]))
       (is (= [0.0 1.0 1.0] (seq (.buckets (.get ((metrics/snapshot) :mytest/metric {:exception :none}))))))
-      (is (= 1 @times-called)))))
+      (is (= 1 @times-called))))
+  (testing "timed macro should not call register repeatedly"
+    (metrics/clear-default-registry!)
+    (metrics/timed :register/cached {} (do))
+    (with-redefs [metrics/register-with-action (fn [& _] (throw (Exception. "register called!")))]
+      (metrics/timed :register/cached {} (do)))))
 
 (deftest measured-execution-test
   (testing "it measures the execution time of the given body"

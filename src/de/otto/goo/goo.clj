@@ -2,7 +2,6 @@
   (:require [iapetos.core :as p]
             [iapetos.export :as e]
             [clojure.tools.logging :as log]
-            [iapetos.core :as prom]
             [clojure.string :as str])
   (:import (io.prometheus.client Collector$MetricFamilySamples$Sample Gauge Gauge$Child)
            (iapetos.registry IapetosRegistry)))
@@ -74,6 +73,7 @@
   (register! (p/summary name options)))
 
 (defn register-histogram! [name options]
+  (println "called with: " name " and " options )
   (register! (p/histogram name options)))
 
 (defn- compojure-path->url-path [cpj-path]
@@ -98,9 +98,11 @@
       (observe! :http/duration-in-s labels (milli-to-seconds (- (System/currentTimeMillis) start-time)))
       response)))
 
+(def cached-register-histogram! (memoize register-histogram!))
+
 (defmacro timed [metric-name labels->values body & buckets]
   `(let [buckets# (or ~@buckets [0.001 0.005 0.01 0.05 0.1 0.5 1])]
-     (quiet-register! (prom/histogram ~metric-name {:labels (conj (keys ~labels->values) :exception) :buckets buckets#}))
+     (cached-register-histogram! ~metric-name {:labels (conj (keys ~labels->values) :exception) :buckets buckets#})
      (let [start-time# (System/currentTimeMillis)]
        (try
          (let [result# ~body]
