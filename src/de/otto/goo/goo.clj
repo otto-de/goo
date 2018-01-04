@@ -73,7 +73,6 @@
   (register! (p/summary name options)))
 
 (defn register-histogram! [name options]
-  (println "called with: " name " and " options )
   (register! (p/histogram name options)))
 
 (defn- compojure-path->url-path [cpj-path]
