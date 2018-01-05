@@ -6,9 +6,7 @@
   (:import (io.prometheus.client Collector$MetricFamilySamples$Sample Gauge Gauge$Child)
            (iapetos.registry IapetosRegistry)))
 
-(def empty-registry (p/collector-registry))
-
-(defonce default-registry (atom empty-registry))
+(defonce default-registry (atom p/default-registry))
 
 (defn ^IapetosRegistry snapshot []
   @default-registry)
