@@ -34,8 +34,7 @@
   (swap! default-registry (fn [r] (p/register-as r metric collector))))
 
 (defn register! [& ms]
-  (register-with-action #(
-                           /warn (.getMessage %)) ms))
+  (register-with-action #(log/warn (.getMessage %)) ms))
 
 (defn quiet-register! [& ms]
   (register-with-action (fn [_]) ms))
