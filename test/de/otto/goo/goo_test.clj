@@ -150,9 +150,11 @@
 (deftest timing-middleware-test
   (let [response     {:status 200}
         handler      (fn [& _] (Thread/sleep 90) response)
-        get-request  {:compojure/route [:get "/path1/path2/:id"]}
+        get-request  {:compojure/route [:get "/path1/path2/:id"]
+                      :headers {"user-agent" "foobar"}}
         get2-request {:compojure/route [:get "dummy"]}
-        post-request {:compojure/route [:post "/path1/path2/:id"]}]
+        post-request {:compojure/route [:post "/path1/path2/:id"]
+                      :headers {"user-agent" "foobaz"}}]
     (testing "it returns the response of the handler fn"
       (is (= response
              ((metrics/timing-middleware handler) get2-request))))
@@ -164,18 +166,18 @@
       ((metrics/timing-middleware handler) get-request)
       (let [snapshot (metrics/snapshot)]
         (is (= 1.0
-               (value "http_duration_in_s_count" ["path" "method" "rc"] ["/path1/path2" ":get" "200"])))
+               (value "http_duration_in_s_count" ["path" "method" "rc" "useragent"] ["/path1/path2" ":get" "200" "foobar"])))
         (is (= [0.0 0.0 0.0 0.0 1.0 1.0 1.0 1.0]
-               (seq (.buckets (.get (snapshot :http/duration-in-s {:rc 200 :method :get :path "/path1/path2"}))))))))
+               (seq (.buckets (.get (snapshot :http/duration-in-s {:rc 200 :method :get :path "/path1/path2" :useragent "foobar"}))))))))
     (testing "it creates metrics for a two post requests"
       (metrics/clear-default-registry!)
       ((metrics/timing-middleware handler) post-request)
       ((metrics/timing-middleware handler) post-request)
       (let [snapshot (metrics/snapshot)]
         (is (= 2.0
-               (value "http_duration_in_s_count" ["path" "method" "rc"] ["/path1/path2" ":post" "200"])))
+               (value "http_duration_in_s_count" ["path" "method" "rc" "useragent"] ["/path1/path2" ":post" "200" "foobaz"])))
         (is (= [0.0 0.0 0.0 0.0 2.0 2.0 2.0 2.0]
-               (seq (.buckets (.get (snapshot :http/duration-in-s {:rc 200 :method :post :path "/path1/path2"}))))))))))
+               (seq (.buckets (.get (snapshot :http/duration-in-s {:rc 200 :method :post :path "/path1/path2" :useragent "foobaz"}))))))))))
 
 (deftest timed-test
   (testing "for the timed macro on can determine the buckets optionally"
