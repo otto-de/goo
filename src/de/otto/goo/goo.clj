@@ -96,11 +96,9 @@
       (observe! :http/duration-in-s labels (milli-to-seconds (- (System/currentTimeMillis) start-time)))
       response)))
 
-(def cached-register-histogram! (memoize register-histogram!))
-
 (defmacro timed [metric-name labels->values body & buckets]
   `(let [buckets# (or ~@buckets [0.001 0.005 0.01 0.05 0.1 0.5 1])]
-     (cached-register-histogram! ~metric-name {:labels (conj (keys ~labels->values) :exception) :buckets buckets#})
+     (quiet-register! (p/histogram ~metric-name {:labels (conj (keys ~labels->values) :exception) :buckets buckets#}))
      (let [start-time# (System/currentTimeMillis)]
        (try
          (let [result# ~body]
