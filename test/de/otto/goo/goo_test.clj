@@ -24,22 +24,6 @@
           (is (= (first warning) :warn))
           (is (str/includes? (second warning) "app_requests")))))))
 
-(deftest register-test
-  (testing "it registers a metric under a name"
-    (metrics/register! (p/counter :app/requests))
-    (is ((metrics/snapshot) :app/requests)))
-
-  (testing "it warns if the metric is already registered"
-    (metrics/clear-default-registry!)
-    (let [logged (atom [])]
-      (with-redefs [log/log* (fn [_ level _ message] (swap! logged conj [level message]))]
-        (metrics/register! (p/counter :app_requests))
-        (metrics/register! (p/counter :app_requests))
-        (let [warning (first @logged)]
-          (is (= 1 (count @logged)))
-          (is (= (first warning) :warn))
-          (is (str/includes? (second warning) "app_requests")))))))
-
 (deftest with-default-registry-test
   (testing "it uses the default registry for lookup of metrics"
     (metrics/register! (p/counter :app/requests))
